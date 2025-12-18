@@ -6,7 +6,6 @@
 #include <algorithm>
 #include "solver_types.hh"
 #include "constraint.hh"
-#include "dqrat_check.hh"
 
 using std::vector;
 using std::unordered_map;
@@ -14,18 +13,23 @@ using std::sort;
 
 namespace DQRATCheck {
 
-	class QCDCL_solver;
+	class DQRATCheck;
 
 	class ConstraintDB {
 
 		public:
-			ConstraintDB(DQRATCheck& checker);
+			//ConstraintDB(DQRATCheck& checker);
+			ConstraintDB();
 			CRef addConstraint(vector<Literal>& literals);
 			Constraint& getConstraint(CRef constraint_reference);
 			vector<CRef>::const_iterator constraintReferencesBegin();
 			vector<CRef>::const_iterator constraintReferencesEnd();
-			vector<CRef>::const_iterator literalOccurrencesBegin(Literal l, ConstraintType constraint_type);
-			vector<CRef>::const_iterator literalOccurrencesEnd(Literal l, ConstraintType constraint_type);
+			inline vector<CRef>::const_iterator literalOccurrencesBegin(Literal l) {
+				return literal_occurrences[l].begin();
+			}
+			inline vector<CRef>::const_iterator literalOccurrencesEnd(Literal l) {
+				return literal_occurrences[l].end();
+			}
 			void bumpConstraintActivity(Constraint& constraint, ConstraintType constraint_type);
 			virtual void notifyStart();
 			void updateLBD(Constraint& constraint);
@@ -37,7 +41,7 @@ namespace DQRATCheck {
 			void cleanConstraints();
 			bool isLocked(Constraint& constraint, CRef constraint_reference);
 
-			DQRATCheck& checker;
+			//DQRATCheck& checker;
 			ConstraintAllocator constraints;
 			vector<CRef> constraint_list;
 			unordered_map<Literal, vector<CRef>> literal_occurrences;

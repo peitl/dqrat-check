@@ -14,7 +14,7 @@ namespace DQRATCheck {
 			//virtual void removeConstraint(CRef constraint_reference, ConstraintType constraint_type) = 0;
 			virtual void notifyAssigned(Literal l) = 0;
 			virtual void notifyBacktrack(uint32_t decision_level_before) = 0;
-			virtual void relocConstraintReferences(ConstraintType constraint_type) = 0;
+			virtual void relocConstraintReferences() = 0;
 			virtual bool phaseAdvice(Variable v) = 0;
 			virtual bool disablesConstraint(Literal l, ConstraintType constraint_type) = 0;
 

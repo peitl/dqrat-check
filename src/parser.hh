@@ -42,8 +42,8 @@ namespace DQRATCheck {
 
 		// IO methods
 		std::istream& getline(std::istream& ifs, std::string& str);
-		void readAUTO(std::istream& ifs = std::cin);
-		void readQCIR(std::istream& ifs = std::cin);
+		//void readAUTO(std::istream& ifs = std::cin);
+		//void readQCIR(std::istream& ifs = std::cin);
 		DQBF readQDIMACS(std::istream& ifs = std::cin);
 		void writeQDIMACS();
 

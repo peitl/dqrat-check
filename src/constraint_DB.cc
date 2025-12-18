@@ -4,8 +4,9 @@
 
 namespace DQRATCheck {
 
-	ConstraintDB::ConstraintDB(DQRATCheck& checker):
-		checker(checker),
+	//ConstraintDB::ConstraintDB(DQRATCheck& checker):
+	ConstraintDB::ConstraintDB():
+		//checker(checker),
 		constraints(ConstraintAllocator()),
 		ca_to(nullptr) {}
 

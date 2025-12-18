@@ -1,6 +1,5 @@
 #include "parser.hh"
 #include "dqbf.hh"
-#include <algorithm>
 #include <assert.h>
 
 using std::istream;
@@ -10,29 +9,18 @@ namespace DQRATCheck {
 
 	const char QTYPE_FORALL = 'a';
 	const char QTYPE_EXISTS = 'e';
-	const char QTYPE_FREE = 'f';
 	const char QTYPE_UNDEF = 0;
 
 	const string QDIMACS_QTYPE_FORALL = "a";
 	const string QDIMACS_QTYPE_EXISTS = "e";
 	const string QDIMACS_QTYPE_DEPEND = "d";
 
-#define QCIR_BUFFER_SIZE 8192
-#define QCIR_QTYPE_COUNT 3
-
-	const string QCIR_QTYPE[QCIR_QTYPE_COUNT] = {"exists", "forall", "free"};
-	const char QCIR_QTYPE_MAP[QCIR_QTYPE_COUNT] = {QTYPE_EXISTS, QTYPE_FORALL, QTYPE_FREE};
-
-#define QCIR_GATE_COUNT 4
-
-	const string QCIR_GATE[QCIR_GATE_COUNT] = {"and", "or", "xor", "ite"};
-
 	istream& Parser::getline(istream& ifs, std::string& str) {
 		++current_line;
 		return std::getline(ifs, str);
 	}
 
-	void Parser::readAUTO(istream& ifs) {
+	/*void Parser::readAUTO(istream& ifs) {
 		int first_char = ifs.peek();
 		while (isspace(first_char)) {
 			ifs.get();
@@ -43,7 +31,7 @@ namespace DQRATCheck {
 		} else {
 			readQCIR(ifs);
 		}
-	}
+	}*/
 
 	DQBF Parser::readQDIMACS(istream& ifs) {
 		DQBF dqbf; // will return this at the end
@@ -88,13 +76,28 @@ namespace DQRATCheck {
 		bool empty_formula = true;
 
 		// Read the prefix.
+		vector<Variable> all_universals_so_far;
 		while (ifs >> token) {
 			if (token == QDIMACS_QTYPE_FORALL) {
 				current_qtype = QTYPE_FORALL;
 			} else if (token == QDIMACS_QTYPE_EXISTS) {
 				current_qtype = QTYPE_EXISTS;
 			} else if (token == QDIMACS_QTYPE_DEPEND) {
-				current_qtype = QTYPE_EXISTS;
+				Variable new_exi;
+				ifs >> new_exi;
+				if (var_conversion_map[new_exi] != 0) {
+					duplicate_variable_error(new_exi);
+				}
+				vector<Variable> dependency_set;
+				ifs >> current_var;
+				while (current_var != 0) {
+					if (current_var < 0 || current_var > max_var) {
+						variable_out_of_bounds_error(current_var);
+					}
+					dependency_set.push_back(current_var);
+					ifs >> current_var;
+				}
+				dqbf.addVarExists(new_exi, dependency_set);
 			} else {
 				/* The prefix has ended.
 				 * We have, however, already read the first literal of the first clause.
@@ -115,16 +118,18 @@ namespace DQRATCheck {
 				}
 				var_conversion_map[current_var] = vars_seen;
 				// TODO if current line is a dependency line, first read all dependencies
-				dqbf.addVarExists(std::to_string(current_var));
+				if (current_qtype == QTYPE_FORALL) {
+					all_universals_so_far.push_back(current_var);
+					dqbf.addVarForall(current_var);
+				} else if (current_qtype == QTYPE_EXISTS) {
+					dqbf.addVarExists(current_var, all_universals_so_far);
+				}
 				// TODO if linear prefix line, add variable with explicit dependencies that include all
 				// universal variables so far
 				ifs >> current_var;
 			}
 			getline(ifs, line);
 		}
-
-		// prepare the vector for the top-level term
-		vector<Literal> top_level_term;
 
 		// Handle the case of an empty formula
 		if (!empty_formula) {
@@ -159,320 +164,11 @@ namespace DQRATCheck {
 				}
 				if (!tautological) {
 					dqbf.addConstraint(temp_clause);
-					if (!use_model_generation) {
-						// add all of the Tseitin terms
-						vars_seen++;
-						dqbf.addVarForall(std::to_string(max_var + clauses_seen));
-						top_level_term.push_back(mkLiteral(vars_seen, true));
-						for (auto lit: temp_clause) {
-							dqbf.addDependency(vars_seen, var(lit));
-							vector<Literal> term{lit, mkLiteral(vars_seen, false)};
-							dqbf.addConstraint(term, ConstraintType::terms);
-						}
-					}
 				}
 				getline(ifs, line);
 			} while ((&ifs != &std::cin || clauses_seen < num_clauses) && ifs >> literal);
 		}
-		if (!use_model_generation) {
-			pcnf.addConstraint(top_level_term, ConstraintType::terms);
-		}
-	}
-
-	void Parser::readQCIR(istream& ifs) {
-		string line;
-
-		qcir_var_conversion_map.clear();
-		nr_vars = 0;
-		current_line = 0;
-		string qcir_output_clause_var = "", qcir_output_term_var = "";
-		bool qcir_output_polarity = true;
-
-		bool is_prefix_line;
-		vector<string> inputs;
-		while (getline(ifs, line)) {
-			size_t idx = 0;
-			skip_space(line, idx);
-			if (idx == line.size() || line[idx] == '#') {
-				continue;
-			}
-			string identifier = extract_next(line, idx, "(=");
-			is_prefix_line = (line[idx] == '(');
-			if (is_prefix_line) {
-				std::transform(identifier.begin(), identifier.end(), identifier.begin(), ::tolower);
-				bool is_quantifier_block = false;
-				uint32_t qtype;
-				for (qtype = 0; qtype < QCIR_QTYPE_COUNT; qtype++) {
-					if (identifier == QCIR_QTYPE[qtype]) {
-						is_quantifier_block = true;
-						break;
-					}
-				}
-				if (is_quantifier_block) {
-					while (line[idx] != ')' && ++idx < line.size()) {
-						pushQCIRVar(extract_next(line, idx, ",)"), QCIR_QTYPE_MAP[qtype], false);
-					}
-					if (idx >= line.size()) {
-						unexpected_eol_error();
-					}
-				} else if (identifier == "output") {
-					if (qcir_output_clause_var != "") {
-						duplicate_qcir_output_gate_error();
-					}
-					string name = extract_lit(line, ++idx);
-					if (name[0] == '-') {
-						qcir_output_polarity = false;
-						name = name.substr(1);
-					}
-					//qcir_output_clause_var = name + ".e";
-					//qcir_output_term_var = name + ".a";
-					qcir_output_clause_var = name;
-					qcir_output_term_var = name;
-				} else {
-					unknown_identifier_error(identifier);
-				}
-			} else {
-				string gate_type = extract_next(line, ++idx, "(");
-				std::transform(gate_type.begin(), gate_type.end(), gate_type.begin(), ::tolower);
-				bool is_valid_gate = false;
-				for (uint32_t i = 0; i < QCIR_GATE_COUNT; i++) {
-					if (gate_type == QCIR_GATE[i]) {
-						inputs.clear();
-						while (line[idx] != ')' && ++idx < line.size()) {
-							inputs.push_back(extract_lit(line, idx));
-							if (inputs.back().empty()) {
-								if (inputs.size() > 1) {
-									unexpected_char_error(line[idx], idx+1);
-								} else {
-									inputs.pop_back();
-								}
-							}
-						}
-						if (idx >= line.size()) {
-							unexpected_eol_error();
-						}
-						addQCIRGate(identifier, i, inputs);
-						is_valid_gate = true;
-						break;
-					}
-				}
-				if (!is_valid_gate) {
-					invalid_gate_type_error(gate_type);
-				}
-			}
-		}
-		if (qcir_output_clause_var == "") {
-			output_gate_missing_error();
-		}
-		vector<Literal> output_clause{mkLiteral(qcir_cls_var_conversion_map.at(qcir_output_clause_var), qcir_output_polarity)};
-		vector<Literal> output_term{mkLiteral(qcir_trm_var_conversion_map.at(qcir_output_term_var), qcir_output_polarity)};
-		pcnf.addConstraint(output_clause, ConstraintType::clauses);
-		pcnf.addConstraint(output_term, ConstraintType::terms);
-	}
-
-	void Parser::addQCIRGate(string gate_name, uint32_t gate_type, vector<string>& inputs) {
-		//string existential_var_name = gate_name + ".e";
-		//string universal_var_name = gate_name + ".a";
-		// experimental: the same original name for both the existential and universal gate variable
-		string existential_var_name = gate_name;
-		string universal_var_name = gate_name;
-		// Detect duplicate gate definitions
-		if (qcir_var_conversion_map.find(gate_name) != qcir_var_conversion_map.end()) {
-			duplicate_qcir_gate_error(gate_name);
-		}
-		/*if (qcir_var_conversion_map.find(existential_var_name) != qcir_var_conversion_map.end()) {
-		  duplicate_qcir_gate_error(gate_name);
-		  }*/
-		vector<int32_t> clause_inputs, term_inputs;
-		clause_inputs.reserve(inputs.size());
-		term_inputs.reserve(inputs.size());
-		uint32_t num_empty_inputs = 0;
-		for (string& input : inputs) {
-			string clause_key, term_key;
-			int32_t neg_multiplier = 1;
-			if (input[0] == '-') {
-				neg_multiplier = -1;
-				clause_key = input.substr(1);
-				term_key = input.substr(1);
-			} else {
-				clause_key = input;
-				term_key = input;
-			}
-			if (clause_key == "") {
-				num_empty_inputs++;
-			}
-			int32_t cls_input_literal_id = 0;
-			int32_t trm_input_literal_id = 0;
-
-			if (qcir_var_conversion_map.find(clause_key) != qcir_var_conversion_map.end()) {
-				cls_input_literal_id = neg_multiplier * qcir_var_conversion_map[clause_key];
-				trm_input_literal_id = cls_input_literal_id;
-			} else {
-				if (qcir_cls_var_conversion_map.find(clause_key) != qcir_cls_var_conversion_map.end()) {
-					cls_input_literal_id = neg_multiplier * qcir_cls_var_conversion_map.at(clause_key);
-				}
-				if (qcir_trm_var_conversion_map.find(clause_key) != qcir_trm_var_conversion_map.end()) {
-					trm_input_literal_id = neg_multiplier * qcir_trm_var_conversion_map.at(clause_key);
-				}
-			}
-
-			if (cls_input_literal_id != 0 && trm_input_literal_id != 0) {
-				clause_inputs.push_back(cls_input_literal_id);
-				term_inputs.push_back(trm_input_literal_id);
-			} else {
-				undeclared_gate_input_literal_error(input);
-			}
-		}
-		pushQCIRVar(existential_var_name, QTYPE_EXISTS, true);
-		pushQCIRVar(universal_var_name, QTYPE_FORALL, true);
-		int32_t gate_clause_var = nr_vars - 1;
-		int32_t gate_term_var = nr_vars;
-		for (int32_t lit : clause_inputs) {
-			pcnf.addDependency(gate_clause_var, abs(lit));
-		}
-		for (int32_t lit : term_inputs) {
-			pcnf.addDependency(gate_term_var, abs(lit));
-		}
-		Literal g_c = mkLiteral(gate_clause_var, true);
-		Literal g_t = mkLiteral(gate_term_var, true);
-
-		switch (gate_type) {
-			case 0: {
-						// AND gate
-						vector<Literal> big_constraint;
-
-						big_constraint.reserve(clause_inputs.size()+1);
-						for (int32_t l: clause_inputs) {
-							Literal lit = mkLiteral(abs(l), l > 0);
-							vector<Literal> small_clause{lit, ~g_c};
-							pcnf.addConstraint(small_clause, ConstraintType::clauses);
-							big_constraint.push_back(~lit);
-						}
-						big_constraint.push_back(g_c);
-						pcnf.addConstraint(big_constraint, ConstraintType::clauses);
-						big_constraint.clear();
-
-						big_constraint.reserve(term_inputs.size()+1);
-						for (int32_t l: term_inputs) {
-							Literal lit = mkLiteral(abs(l), l > 0);
-							vector<Literal> small_term{~lit, g_t};
-							pcnf.addConstraint(small_term, ConstraintType::terms);
-							big_constraint.push_back(lit);
-						}
-						big_constraint.push_back(~g_t);
-						pcnf.addConstraint(big_constraint, ConstraintType::terms);
-						break;
-					}
-			case 1: {
-						// OR gate
-						vector<Literal> big_constraint;
-
-						big_constraint.reserve(clause_inputs.size()+1);
-						for (int32_t l: clause_inputs) {
-							Literal lit = mkLiteral(abs(l), l > 0);
-							vector<Literal> small_clause{~lit, g_c};
-							pcnf.addConstraint(small_clause, ConstraintType::clauses);
-							big_constraint.push_back(lit);
-						}
-						big_constraint.push_back(~g_c);
-						pcnf.addConstraint(big_constraint, ConstraintType::clauses);
-						big_constraint.clear();
-
-						big_constraint.reserve(term_inputs.size()+1);
-						for (int32_t l: term_inputs) {
-							Literal lit = mkLiteral(abs(l), l > 0);
-							vector<Literal> small_term{lit, ~g_t};
-							pcnf.addConstraint(small_term, ConstraintType::terms);
-							big_constraint.push_back(~lit);
-						}
-						big_constraint.push_back(g_t);
-						pcnf.addConstraint(big_constraint, ConstraintType::terms);
-						break;
-					}
-			case 2: {
-						// XOR gate
-						if (clause_inputs.size() != 2) {
-							invalid_xor_gate_size_error();
-						}
-						Literal x = mkLiteral(abs(clause_inputs[0]), clause_inputs[0] > 0);
-						Literal y = mkLiteral(abs(clause_inputs[1]), clause_inputs[1] > 0);
-						vector<vector<Literal>> clauses = {
-							{~g_c, ~x, ~y},
-							{~g_c,  x,  y},
-							{ g_c, ~x,  y},
-							{ g_c,  x, ~y}
-						};
-						for (vector<Literal>& c : clauses) {
-							pcnf.addConstraint(c, ConstraintType::clauses);
-						}
-						x = mkLiteral(abs(term_inputs[0]), term_inputs[0] > 0);
-						y = mkLiteral(abs(term_inputs[1]), term_inputs[1] > 0);
-						vector<vector<Literal>> terms = {
-							{ g_t,  x,  y},
-							{ g_t, ~x, ~y},
-							{~g_t,  x, ~y},
-							{~g_t, ~x,  y}
-						};
-						for (vector<Literal>& t : terms) {
-							pcnf.addConstraint(t, ConstraintType::terms);
-						}
-						break;
-					}
-			case 3: {
-						// ITE gate
-						if (clause_inputs.size() != 3) {
-							invalid_ite_gate_size_error();
-						}
-						Literal lit_cond = mkLiteral(abs(clause_inputs[0]), clause_inputs[0] > 0);
-						Literal lit_then = mkLiteral(abs(clause_inputs[1]), clause_inputs[1] > 0);
-						Literal lit_else = mkLiteral(abs(clause_inputs[2]), clause_inputs[2] > 0);
-						vector<vector<Literal>> clauses = {
-							{~g_c, ~lit_cond,  lit_then},
-							{~g_c,  lit_cond,  lit_else},
-							{ g_c, ~lit_cond, ~lit_then},
-							{ g_c,  lit_cond, ~lit_else}
-						};
-						for (vector<Literal>& c : clauses) {
-							pcnf.addConstraint(c, ConstraintType::clauses);
-						}
-						lit_cond = mkLiteral(abs(term_inputs[0]), term_inputs[0] > 0);
-						lit_then = mkLiteral(abs(term_inputs[1]), term_inputs[1] > 0);
-						lit_else = mkLiteral(abs(term_inputs[2]), term_inputs[2] > 0);
-						vector<vector<Literal>> terms = {
-							{ g_t,  lit_cond, ~lit_then},
-							{ g_t, ~lit_cond, ~lit_else},
-							{~g_t,  lit_cond,  lit_then},
-							{~g_t, ~lit_cond,  lit_else}
-						};
-						for (vector<Literal>& t : terms) {
-							pcnf.addConstraint(t, ConstraintType::terms);
-						}
-						break;
-					}
-		}
-	}
-
-	void Parser::pushQCIRVar(const string& var_name, char qtype, bool auxiliary) {
-		/* if the variable is not auxiliary, push it to the shared map,
-		 * otherwise push it to the map based on qtype */
-		if (!auxiliary) {
-			assert(qcir_var_conversion_map.find(var_name) == qcir_var_conversion_map.end());
-			nr_vars++;
-			qcir_var_conversion_map.insert({var_name, nr_vars});
-			pcnf.addVariable(var_name, qtype, auxiliary);
-		} else {
-			if (qtype == QTYPE_FORALL) {
-				assert(qcir_trm_var_conversion_map.find(var_name) == qcir_trm_var_conversion_map.end());
-				nr_vars++;
-				qcir_trm_var_conversion_map.insert({var_name, nr_vars});
-				pcnf.addVariable(var_name, qtype, auxiliary);
-			} else {
-				assert(qcir_cls_var_conversion_map.find(var_name) == qcir_cls_var_conversion_map.end());
-				nr_vars++;
-				qcir_cls_var_conversion_map.insert({var_name, nr_vars});
-				pcnf.addVariable(var_name, qtype, auxiliary);
-			}
-		}
+		return dqbf;
 	}
 
 	char * Parser::uintToCharArray(uint32_t x) {
