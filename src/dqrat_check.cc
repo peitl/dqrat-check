@@ -6,7 +6,7 @@ namespace DQRATCheck {
 
 	void DQRATCheck::readDQBF(string filename) {
 	  std::ifstream ifs(filename);
-	  dqbf = Parser().readQDIMACS(ifs);
+	  Parser().readQDIMACS(dqbf, ifs);
 	}
 
 }

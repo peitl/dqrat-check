@@ -44,7 +44,7 @@ namespace DQRATCheck {
 		std::istream& getline(std::istream& ifs, std::string& str);
 		//void readAUTO(std::istream& ifs = std::cin);
 		//void readQCIR(std::istream& ifs = std::cin);
-		DQBF readQDIMACS(std::istream& ifs = std::cin);
+		void readQDIMACS(DQBF& dqbf, std::istream& ifs = std::cin);
 		void writeQDIMACS();
 
 		const std::string error_header = "DQRATCheck error: ";

@@ -33,8 +33,7 @@ namespace DQRATCheck {
 		}
 	}*/
 
-	DQBF Parser::readQDIMACS(istream& ifs) {
-		DQBF dqbf; // will return this at the end
+	void Parser::readQDIMACS(DQBF& dqbf, istream& ifs) {
 
 		string token;
 
@@ -88,6 +87,7 @@ namespace DQRATCheck {
 				if (var_conversion_map[new_exi] != 0) {
 					duplicate_variable_error(new_exi);
 				}
+				var_conversion_map[new_exi] = ++vars_seen;
 				vector<Variable> dependency_set;
 				ifs >> current_var;
 				while (current_var != 0) {
@@ -98,6 +98,10 @@ namespace DQRATCheck {
 					ifs >> current_var;
 				}
 				dqbf.addVarExists(new_exi, dependency_set);
+
+				// skip the rest of the line and continue main loop
+				getline(ifs, line);
+				continue;
 			} else {
 				/* The prefix has ended.
 				 * We have, however, already read the first literal of the first clause.
@@ -168,7 +172,6 @@ namespace DQRATCheck {
 				getline(ifs, line);
 			} while ((&ifs != &std::cin || clauses_seen < num_clauses) && ifs >> literal);
 		}
-		return dqbf;
 	}
 
 	char * Parser::uintToCharArray(uint32_t x) {
