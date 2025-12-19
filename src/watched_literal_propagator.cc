@@ -1,10 +1,9 @@
 #include "watched_literal_propagator.hh"
 #include "constraint_DB.hh"
-#include "dqrat_check.hh"
 
 namespace DQRATCheck {
 
-	WatchedLiteralPropagator::WatchedLiteralPropagator(DQRATCheck& checker): checker(checker), constraints_watched_by(vector<vector<CRef>>(2)) {}
+	WatchedLiteralPropagator::WatchedLiteralPropagator(ConstraintDB& constraint_database): constraint_database(constraint_database), constraints_watched_by(vector<vector<CRef>>(2)) {}
 
 	CRef WatchedLiteralPropagator::propagate() {
 		while (!propagation_queue.empty()) {
@@ -15,10 +14,10 @@ namespace DQRATCheck {
 			vector<CRef>& record_vector = constraints_watched_by[toInt(watcher)];
 			vector<CRef>::iterator i, j;
 			for (i = j = record_vector.begin(); i != record_vector.end(); ++i) {
-				++checker.statistics.watched_list_accesses;
+				//++checker.statistics.watched_list_accesses;
 				CRef& constraint_reference = *i;
 				bool watcher_changed = false;
-				Constraint& constraint = checker.get_clause(constraint_reference);
+				Constraint& constraint = constraint_database.getConstraint(constraint_reference);
 				if (constraintIsWatchedByLiteral(constraint, watcher) && !constraint.isMarked()) { // if we want to allow for removal, add "&& !constraint.isMarked()"
 					if (!updateWatchedLiterals(constraint, constraint_reference, watcher_changed)) {
 						// Constraint is empty: clean up, return constraint_reference.
@@ -29,7 +28,7 @@ namespace DQRATCheck {
 						return constraint_reference;
 					}
 				} else {
-					++checker.statistics.spurious_watch_events;
+					//++checker.statistics.spurious_watch_events;
 					watcher_changed = true;
 				}
 				if (!watcher_changed) {
@@ -43,7 +42,7 @@ namespace DQRATCheck {
 	}
 
 	void WatchedLiteralPropagator::addConstraint(CRef constraint_reference) {
-		Constraint& constraint = checker.get_clause(constraint_reference);
+		Constraint& constraint = constraint_database.getConstraint(constraint_reference);
 		if (constraint.size() == 0) {
 			// TODO handle empty clause
 		} else if (constraint.size() == 1) {
@@ -60,9 +59,9 @@ namespace DQRATCheck {
 			vector<CRef>::iterator i, j;
 			for (i = j = watched_records.begin(); i != watched_records.end(); ++i) {
 				CRef constraint_reference = *i;
-				Constraint& constraint = checker.get_clause(constraint_reference);
+				Constraint& constraint = constraint_database.getConstraint(constraint_reference);
 				if (!constraint.isMarked()) {
-					checker.get_dqbf().constraint_database.relocate(constraint_reference);
+					constraint_database.relocate(constraint_reference);
 					*j++ = *i;
 				}
 			}

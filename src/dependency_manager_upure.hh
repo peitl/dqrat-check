@@ -5,17 +5,17 @@
 
 namespace DQRATCheck {
 
-	class DQRATCheck;
+	class DQBF;
 
 	class DependencyManagerUPure: public DependencyManager {
 
 		public:
-			DependencyManagerUPure(DQRATCheck& checker);
+			DependencyManagerUPure(DQBF& dqbf);
 
 			bool notDependsOn(Variable of, Variable on) const;
 
 		protected:
-			DQRATCheck& checker;
+			DQBF& dqbf;
 			void getDepsUPure(Variable v);
 			vector<bool> getReachable(Literal l);
 			//bool checkDependency(Variable of, Literal lof);

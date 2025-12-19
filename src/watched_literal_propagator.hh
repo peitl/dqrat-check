@@ -10,19 +10,18 @@ using std::vector;
 
 namespace DQRATCheck {
 
-  class DQRATCheck;
+  class ConstraintDB;
 
   class WatchedLiteralPropagator: public Propagator {
 
     public:
-    WatchedLiteralPropagator(DQRATCheck& checker);
+    WatchedLiteralPropagator(ConstraintDB& constraint_database);
     virtual void addVariable();
     virtual CRef propagate();
     virtual void addConstraint(CRef constraint_reference);
     virtual void notifyAssigned(Literal l);
     virtual void notifyBacktrack(uint32_t decision_level_before);
     virtual void relocConstraintReferences();
-    //virtual bool phaseAdvice(Variable v);
     virtual bool satisfied(Literal literal);
 	virtual void enqueue(Literal literal);
 
@@ -56,7 +55,7 @@ namespace DQRATCheck {
       }
     };*/
 
-    DQRATCheck& checker;
+    ConstraintDB& constraint_database;
 
     vector<Literal> propagation_queue;
     vector<vector<CRef>> constraints_watched_by;

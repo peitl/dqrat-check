@@ -4,15 +4,17 @@
 
 namespace DQRATCheck {
 
-	//ConstraintDB::ConstraintDB(DQRATCheck& checker):
-	ConstraintDB::ConstraintDB():
-		//checker(checker),
+	ConstraintDB::ConstraintDB(DQBF& dqbf):
+		dqbf(dqbf),
+		propagator(*this),
 		constraints(ConstraintAllocator()),
-		ca_to(nullptr) {}
+		ca_to(nullptr) {
+	}
 
 	CRef ConstraintDB::addConstraint(vector<Literal>& literals) {
 		CRef constraint_reference = constraints.alloc(literals);
 		constraint_list.push_back(constraint_reference);
+		propagator.addConstraint(constraint_reference);
 		return constraint_reference;
 	}
 

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "solver_types.hh"
 #include "constraint.hh"
+#include "watched_literal_propagator.hh"
 
 using std::vector;
 using std::unordered_map;
@@ -13,13 +14,13 @@ using std::sort;
 
 namespace DQRATCheck {
 
-	class DQRATCheck;
+	class DQBF;
 
 	class ConstraintDB {
 
 		public:
 			//ConstraintDB(DQRATCheck& checker);
-			ConstraintDB();
+			ConstraintDB(DQBF& dqbf);
 			CRef addConstraint(vector<Literal>& literals);
 			Constraint& getConstraint(CRef constraint_reference);
 			vector<CRef>::const_iterator constraintReferencesBegin();
@@ -41,7 +42,8 @@ namespace DQRATCheck {
 			void cleanConstraints();
 			bool isLocked(Constraint& constraint, CRef constraint_reference);
 
-			//DQRATCheck& checker;
+			DQBF& dqbf;
+			WatchedLiteralPropagator propagator;
 			ConstraintAllocator constraints;
 			vector<CRef> constraint_list;
 			unordered_map<Literal, vector<CRef>> literal_occurrences;

@@ -1,11 +1,11 @@
 #include "dependency_manager_upure.hh"
-#include "dqrat_check.hh"
 #include "constraint_DB.hh"
+#include "dqbf.hh"
 #include <stack>
 
 namespace DQRATCheck {
 
-	DependencyManagerUPure::DependencyManagerUPure(DQRATCheck& checker): DependencyManager(), checker(checker) {
+	DependencyManagerUPure::DependencyManagerUPure(DQBF& dqbf): DependencyManager(), dqbf(dqbf) {
 	}
 
 	/*
@@ -15,7 +15,7 @@ namespace DQRATCheck {
 	void DependencyManagerUPure::getDepsUPure(Variable v) {
 		if (independencies_known[v])
 			return;
-		if (!checker.get_dqbf().is_var_exists(v)) {
+		if (!dqbf.is_var_exists(v)) {
 			return;
 		}
 		//clock_t t = clock();
@@ -24,9 +24,9 @@ namespace DQRATCheck {
 		vector<bool> reachable_false = getReachable(mkLiteral(v, false));
 
 		// TODO iterate over !vqtype variables only (using a next-of-type query?)
-		for(int x = (v+1)*2; x <= checker.get_dqbf().get_max_var()*2; x += 2) {
+		for(int x = (v+1)*2; x <= dqbf.get_max_var()*2; x += 2) {
 			Variable xvar = x / 2;
-			if (checker.get_dqbf().is_var_exists(xvar)) {
+			if (dqbf.is_var_exists(xvar)) {
 				if ((reachable_true[x] && reachable_false[x^1]) || (reachable_true[x^1] && reachable_false[x])) {
 					//std::cout << "Found that " << solver.externalize(mkLiteral(xvar)) << "  *does*  depend on " << solver.externalize(mkLiteral(v)) << std::endl; 
 				}
@@ -52,11 +52,11 @@ namespace DQRATCheck {
 		 *	 the second one)
 		 */
 
-		uint32_t num_vars = checker.get_dqbf().get_max_var();
+		uint32_t num_vars = dqbf.get_max_var();
 		uint32_t num_lits = num_vars * 2;
 
 		Variable lvar = var(l);
-		bool lqtype = !checker.get_dqbf().is_var_exists(var(l));
+		bool lqtype = !dqbf.is_var_exists(lvar);
 		bool target_qtype = 1 - lqtype;
 
 		vector<bool> reachable(num_lits);
@@ -73,7 +73,7 @@ namespace DQRATCheck {
 		Literal negl = ~l;
 
 		//uint32_t max_target_lits = 2*solver.variable_data_store->countVarsOfTypeRightOf(target_qtype, lvar);
-		uint32_t max_target_lits = 2*checker.get_dqbf().get_max_var();
+		uint32_t max_target_lits = 2*dqbf.get_max_var();
 
 		uint32_t target_lits_found = 0;
 		while (!landing_literals.empty()) {
@@ -84,11 +84,11 @@ namespace DQRATCheck {
 				continue;
 			explored[current_lit_idx] = true;
 
-			for (auto occit = checker.get_dqbf().constraint_database.literalOccurrencesBegin(current_lit);
-					occit != checker.get_dqbf().constraint_database.literalOccurrencesEnd(current_lit);
+			for (auto occit = dqbf.constraint_database.literalOccurrencesBegin(current_lit);
+					occit != dqbf.constraint_database.literalOccurrencesEnd(current_lit);
 					occit++) {
 				//auto fel_ref = first_entry_literal.find(*occit);
-				Constraint& clause = checker.get_dqbf().constraint_database.getConstraint(*occit);
+				Constraint& clause = dqbf.constraint_database.getConstraint(*occit);
 				bool clause_has_negl = false;
 				for (Literal lit : clause) {
 					if (lit == negl) {
@@ -104,7 +104,7 @@ namespace DQRATCheck {
 					if (!explored[toInt(~lit)]) {
 						Variable litvar = var(lit);
 						int lit_idx = toInt(lit);
-						bool litvarqtype = !checker.get_dqbf().is_var_exists(litvar);
+						bool litvarqtype = !dqbf.is_var_exists(litvar);
 						if (litvarqtype == 0 && l <= lit) {
 							landing_literals.push(~lit);
 						}

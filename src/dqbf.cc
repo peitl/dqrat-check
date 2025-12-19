@@ -2,7 +2,7 @@
 
 namespace DQRATCheck {
 
-	DQBF::DQBF() {
+	DQBF::DQBF() : constraint_database(*this) {
 		// padding so that internal variable names can be used as indices
 		external_name.push_back(0);
 		is_existential.push_back(0); 
