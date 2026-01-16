@@ -8,11 +8,11 @@ namespace DQRATCheck {
 		is_existential.push_back(0); 
 	}
 
-	void DQBF::addVarExists(Variable original_name) {
-		addVarExists(original_name, {});
+	Variable DQBF::addVarExists(Variable original_name) {
+		return addVarExists(original_name, {});
 	}
 
-	void DQBF::addVarExists(Variable original_name, const vector<Variable>& dependency_set) {
+	Variable DQBF::addVarExists(Variable original_name, const vector<Variable>& dependency_set) {
 		Variable internal = ++max_var;
 
 		exivars.push_back(internal);
@@ -22,9 +22,12 @@ namespace DQRATCheck {
 		internal_name[original_name] = internal;
 		
 		depset[internal] = std::unordered_set<Variable>(dependency_set.begin(), dependency_set.end());
+
+		constraint_database.registerVariable();
+		return internal;
 	}
 
-	void DQBF::addVarForall(Variable original_name) {
+	Variable DQBF::addVarForall(Variable original_name) {
 		Variable internal = ++max_var;
 
 		univars.push_back(internal);
@@ -32,6 +35,9 @@ namespace DQRATCheck {
 
 		external_name.push_back(original_name);
 		internal_name[original_name] = internal;
+
+		constraint_database.registerVariable();
+		return internal;
 	}
 
 	void DQBF::delVar(Variable) {
@@ -49,6 +55,7 @@ namespace DQRATCheck {
 		}
 	}
 
+	// expects internal names
 	CRef DQBF::addConstraint(vector<Literal>& literals) {
 		return constraint_database.addConstraint(literals);
 	}

@@ -70,7 +70,7 @@ namespace DQRATCheck {
 
 		char current_qtype = QTYPE_UNDEF;
 		int32_t current_var;
-		int vars_seen = 0;
+		//int vars_seen = 0;
 
 		bool empty_formula = true;
 
@@ -87,7 +87,6 @@ namespace DQRATCheck {
 				if (var_conversion_map[new_exi] != 0) {
 					duplicate_variable_error(new_exi);
 				}
-				var_conversion_map[new_exi] = ++vars_seen;
 				vector<Variable> dependency_set;
 				ifs >> current_var;
 				while (current_var != 0) {
@@ -97,7 +96,7 @@ namespace DQRATCheck {
 					dependency_set.push_back(current_var);
 					ifs >> current_var;
 				}
-				dqbf.addVarExists(new_exi, dependency_set);
+				var_conversion_map[new_exi] = dqbf.addVarExists(new_exi, dependency_set);
 
 				// skip the rest of the line and continue main loop
 				getline(ifs, line);
@@ -113,20 +112,18 @@ namespace DQRATCheck {
 
 			ifs >> current_var;
 			while (current_var != 0) {
-				vars_seen++;
+				//vars_seen++;
 				if (current_var < 0 || current_var > max_var) {
 					variable_out_of_bounds_error(current_var);
 				}
 				if (var_conversion_map[current_var] != 0) {
 					duplicate_variable_error(current_var);
 				}
-				var_conversion_map[current_var] = vars_seen;
-				// TODO if current line is a dependency line, first read all dependencies
 				if (current_qtype == QTYPE_FORALL) {
 					all_universals_so_far.push_back(current_var);
-					dqbf.addVarForall(current_var);
+					var_conversion_map[current_var] = dqbf.addVarForall(current_var);
 				} else if (current_qtype == QTYPE_EXISTS) {
-					dqbf.addVarExists(current_var, all_universals_so_far);
+					var_conversion_map[current_var] = dqbf.addVarExists(current_var, all_universals_so_far);
 				}
 				// TODO if linear prefix line, add variable with explicit dependencies that include all
 				// universal variables so far

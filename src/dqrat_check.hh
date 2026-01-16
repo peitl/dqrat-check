@@ -14,6 +14,7 @@ namespace DQRATCheck {
 
     public:
 
+	void readDQRAT(string filename);
 	void readDQBF(string filename);
     inline DQBF& get_dqbf() {
       return dqbf;

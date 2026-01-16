@@ -66,13 +66,13 @@ namespace DQRATCheck {
 
   // Implementation of inline methods.
   inline void WatchedLiteralPropagator::addVariable() {
-    for (ConstraintType constraint_type: constraint_types) {
-      // Add entries for both literals.
-      constraints_watched_by[constraint_type].emplace_back();
-      constraints_watched_by[constraint_type].emplace_back();
-    }
+      constraints_watched_by.emplace_back();
+      constraints_watched_by.emplace_back();
   }
 
+  // TODO change to accept reason, put on propagation queue, create new decision level if necessary
+  // TODO do we need decision levels? Do we want partial backtracks?
+  // potential benefits: vivification, saved work on similar RUPs
   inline void WatchedLiteralPropagator::enqueue(Literal l) {
 	  Variable lv = var(l);
 	  value[lv] = sign(l);

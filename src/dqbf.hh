@@ -28,9 +28,10 @@ namespace DQRATCheck {
 		ConstraintDB constraint_database;
 
 		DQBF();
-		void addVarExists(Variable original_name);
-		void addVarExists(Variable original_name, const vector<Variable>& dependency_set);
-		void addVarForall(Variable original_name);
+		// methods return internal variable name
+		Variable addVarExists(Variable original_name);
+		Variable addVarExists(Variable original_name, const vector<Variable>& dependency_set);
+		Variable addVarForall(Variable original_name);
 		void delVar(Variable original_name);
 
 		void addDependency(Variable of_name, Variable on_name);
@@ -47,6 +48,22 @@ namespace DQRATCheck {
 
 		inline Variable get_max_var() {
 			return max_var;
+		}
+
+		inline Variable internalize(Variable v) {
+			return internal_name[v];
+		}
+
+		inline Literal internalize_literal(int x) {
+			return mkLiteral(internal_name[abs(x)], x > 0);
+		}
+
+		inline Variable externalize(Variable v) {
+			return external_name[v];
+		}
+
+		inline Variable externalize(Literal l) {
+			return external_name[var(l)] * (2*sign(l) - 1);
 		}
 	};
 }

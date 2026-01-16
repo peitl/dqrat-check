@@ -35,6 +35,7 @@ namespace DQRATCheck {
 			virtual void notifyStart();
 			void updateLBD(Constraint& constraint);
 			void relocate(CRef& constraint_reference);
+			inline void registerVariable() { propagator.addVariable(); }
 
 		protected:
 			void relocConstraintReferences();

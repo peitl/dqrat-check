@@ -62,6 +62,7 @@ inline  Literal  operator ~(Literal p)              { Literal q; q.x = p.x ^ 1; 
 inline  Literal  operator ^(Literal p, bool b)      { Literal q; q.x = p.x ^ (unsigned int)b; return q; }
 inline  bool sign      (Literal p)              { return p.x & 1; }
 inline  int  var       (Literal p)              { return p.x >> 1; }
+inline  int  toDimacs  (Literal p)              { return var(p) * (2*sign(p)-1); }
 
 // Mapping Literalerals to and from compact integers suitable for array indexing:
 inline  int  toInt     (Variable v)             { return v; } 
