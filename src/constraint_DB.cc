@@ -14,8 +14,12 @@ namespace DQRATCheck {
 	CRef ConstraintDB::addConstraint(vector<Literal>& literals) {
 		CRef constraint_reference = constraints.alloc(literals);
 		constraint_list.push_back(constraint_reference);
-		propagator.addConstraint(constraint_reference);
-		return constraint_reference;
+		if (propagator.addConstraint(constraint_reference)) {
+			return constraint_reference;
+		} else {
+			// propagator says formula is now UNSAT after unit propagation
+			return CRef_Undef;
+		}
 	}
 
 	void ConstraintDB::relocConstraintReferences() {

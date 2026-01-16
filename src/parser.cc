@@ -33,7 +33,8 @@ namespace DQRATCheck {
 		}
 	}*/
 
-	void Parser::readQDIMACS(DQBF& dqbf, istream& ifs) {
+	// returns false if matrix unsat by unit propagation
+	bool Parser::readQDIMACS(DQBF& dqbf, istream& ifs) {
 
 		string token;
 
@@ -164,11 +165,15 @@ namespace DQRATCheck {
 					}
 				}
 				if (!tautological) {
-					dqbf.addConstraint(temp_clause);
+					if (dqbf.addConstraint(temp_clause) == CRef_Undef) {
+						std::cout << "formula unsat by unit propagation after clause " << clauses_seen << std::endl;;
+						return false;
+					}
 				}
 				getline(ifs, line);
 			} while ((&ifs != &std::cin || clauses_seen < num_clauses) && ifs >> literal);
 		}
+		return true;
 	}
 
 	char * Parser::uintToCharArray(uint32_t x) {

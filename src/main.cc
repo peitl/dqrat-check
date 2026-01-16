@@ -18,14 +18,18 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	std::cout << formula_filename << std::endl;
-	if (proof_filename == "") {
-		std::cout << "no proof given" << std::endl;
-		return 1;
-	}
 	std::cout << proof_filename << std::endl;
 	DQRATCheck::DQRATCheck checker = DQRATCheck::DQRATCheck();
-	checker.readDQBF(formula_filename);
-	checker.readDQRAT(proof_filename);
+	if (checker.readDQBF(formula_filename)) {
+		std::cout << "formula read successfully" << std::endl;
+		if (proof_filename == "") {
+			std::cout << "no proof given" << std::endl;
+			return 1;
+		}
+		checker.readDQRAT(proof_filename);
+	} else {
+		std::cout << "formula found unsat during reading in" << std::endl;
+	}
 
 	return 0;
 }

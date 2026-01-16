@@ -3,7 +3,11 @@
 
 namespace DQRATCheck {
 
-	WatchedLiteralPropagator::WatchedLiteralPropagator(ConstraintDB& constraint_database): constraint_database(constraint_database), constraints_watched_by(vector<vector<CRef>>(2)) {}
+	WatchedLiteralPropagator::WatchedLiteralPropagator(ConstraintDB& constraint_database):
+	   	trail(vector<vector<Literal>>(1)),
+		constraint_database(constraint_database),
+		constraints_watched_by(vector<vector<CRef>>(2)),
+		occurrences_of(vector<vector<CRef>>(2)) {}
 
 	CRef WatchedLiteralPropagator::propagate() {
 		while (!propagation_queue.empty()) {
@@ -19,6 +23,7 @@ namespace DQRATCheck {
 				bool watcher_changed = false;
 				Constraint& constraint = constraint_database.getConstraint(constraint_reference);
 				if (constraintIsWatchedByLiteral(constraint, watcher) && !constraint.isMarked()) { // if we want to allow for removal, add "&& !constraint.isMarked()"
+					//std::cout << "processing clause " << constraint << std::endl;
 					if (!updateWatchedLiterals(constraint, constraint_reference, watcher_changed)) {
 						// Constraint is empty: clean up, return constraint_reference.
 						for (; i != record_vector.end(); i++, j++) {
@@ -41,15 +46,23 @@ namespace DQRATCheck {
 		return CRef_Undef;
 	}
 
-	void WatchedLiteralPropagator::addConstraint(CRef constraint_reference) {
+	// returns false if the formula becomes unsatisfiable under unit propagation
+	bool WatchedLiteralPropagator::addConstraint(CRef constraint_reference) {
 		Constraint& constraint = constraint_database.getConstraint(constraint_reference);
 		if (constraint.size() == 0) {
-			// TODO handle empty clause
+			return false;
 		} else if (constraint.size() == 1) {
+			// TODO make sure that unit constraints are delete-able
 			enqueue(constraint[0]);
+			return propagate() == CRef_Undef;
 		} else {
+			for (Literal l : constraint) {
+				occurrences_of[toInt(l)].push_back(constraint_reference);
+			}
 			constraints_watched_by[toInt(constraint[0])].push_back(constraint_reference);
 			constraints_watched_by[toInt(constraint[1])].push_back(constraint_reference);
+			bool watcher_changed;
+			return updateWatchedLiterals(constraint_database.getConstraint(constraint_reference), constraint_reference, watcher_changed) && propagate();
 		}
 	}
 
@@ -75,14 +88,14 @@ namespace DQRATCheck {
 			return true;
 		}
 
-		if (!is_assigned[var(constraint[1])]) {
+		if (!is_assigned[var(constraint[1])-1]) {
 			std::swap(constraint[0], constraint[1]);
 		}
 
 		unsigned int i = 2; 
-		if (is_assigned[var(constraint[0])]) {
+		if (is_assigned[var(constraint[0])-1]) {
 			for (; i < constraint.size(); i++) {
-				if (!is_assigned[var(constraint[i])]) {
+				if (!is_assigned[var(constraint[i])-1]) {
 					std::swap(constraint[0], constraint[i]);
 					constraints_watched_by[toInt(constraint[0])].emplace_back(constraint_reference);
 					watcher_changed = true;
@@ -95,9 +108,9 @@ namespace DQRATCheck {
 			}
 		}
 
-		if (is_assigned[var(constraint[1])]) {
+		if (is_assigned[var(constraint[1])-1]) {
 			for (; i < constraint.size(); i++) {
-				if (!is_assigned[var(constraint[i])]) {
+				if (!is_assigned[var(constraint[i])-1]) {
 					std::swap(constraint[1], constraint[i]);
 					constraints_watched_by[toInt(constraint[1])].emplace_back(constraint_reference);
 					watcher_changed = true;
@@ -105,7 +118,7 @@ namespace DQRATCheck {
 				}
 			}
 
-			if (is_assigned[var(constraint[1])]) {
+			if (is_assigned[var(constraint[1])-1]) {
 				enqueue(constraint[0]);
 			}
 		}
@@ -119,8 +132,14 @@ namespace DQRATCheck {
 	}
 
 	bool WatchedLiteralPropagator::satisfied(Literal literal) {
-		return is_assigned[var(literal)] && (value[var(literal)] == sign(literal));
+		//std::cout << "is_assigned,value of variable " << var(literal) << " is " << is_assigned[var(literal)-1] << "," << value[var(literal)-1] << std::endl;
+		return is_assigned[var(literal)-1] && (value[var(literal)-1] == sign(literal));
 	}
+
+	bool WatchedLiteralPropagator::assigned(Variable v) {
+		return is_assigned[v-1];
+	}
+
 
 	bool WatchedLiteralPropagator::isDisabled(Constraint& constraint) {
 		for (unsigned i = 0; i < constraint.size(); i++) {

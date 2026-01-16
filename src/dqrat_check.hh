@@ -12,13 +12,19 @@ namespace DQRATCheck {
 
     DQBF dqbf;
 
+	bool negate_and_propagate(const Literal* lits, size_t num_lits, Literal skiplit);
+	bool negate_and_propagate(const vector<Literal>& lits, Literal lx);
+
     public:
 
 	void readDQRAT(string filename);
-	void readDQBF(string filename);
+	bool readDQBF(string filename);
     inline DQBF& get_dqbf() {
       return dqbf;
     }
+
+	bool check_RUP(const vector<Literal>& lits);
+	bool check_DQRATA(const vector<Literal>& lits);
 
     inline Constraint& get_clause(CRef cref) {
       return dqbf.constraint_database.getConstraint(cref);

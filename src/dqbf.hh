@@ -42,6 +42,13 @@ namespace DQRATCheck {
 		void notifyMaxVarDeclaration(Variable max_var);
 		void notifyNumClausesDeclaration(uint32_t num_clauses);
 
+		inline CRef propagate() { return constraint_database.propagate(); }
+		inline void new_decision_level() { constraint_database.new_decision_level(); }
+		inline void backtrack_before(unsigned int decision_level) { constraint_database.backtrack_before(decision_level); }
+		inline bool assigned(Variable v) { return constraint_database.assigned(v); }
+		inline bool satisfied(Literal l) { return constraint_database.satisfied(l); }
+		inline void enqueue(Literal l) { return constraint_database.enqueue(l); };
+
 		inline bool is_var_exists(Variable v) {
 			return is_existential[v];
 		}

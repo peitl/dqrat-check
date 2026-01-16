@@ -14,21 +14,37 @@ namespace DQRATCheck {
 
   class WatchedLiteralPropagator: public Propagator {
 
+	friend ConstraintDB;
+
     public:
     WatchedLiteralPropagator(ConstraintDB& constraint_database);
     virtual void addVariable();
     virtual CRef propagate();
-    virtual void addConstraint(CRef constraint_reference);
+    virtual bool addConstraint(CRef constraint_reference);
     virtual void notifyAssigned(Literal l);
     virtual void notifyBacktrack(uint32_t decision_level_before);
     virtual void relocConstraintReferences();
     virtual bool satisfied(Literal literal);
 	virtual void enqueue(Literal literal);
+	virtual bool assigned(Variable v);
+
+	void new_decision_level();
+	inline void backtrack_before(unsigned int decision_level) {
+		while (trail.size() > decision_level) {
+			for (auto it = trail.back().rbegin(); it != trail.back().rend(); it++) {
+				Variable v = var(*it);
+				//std::cout << "unassign " << v << std::endl;
+				is_assigned[v-1] = false;
+			}
+			trail.pop_back();
+		}
+	};
 
     protected:
     vector<vector<Literal>> trail;
     vector<bool> is_assigned;
     vector<bool> value;
+
     uint32_t findFirstWatcher(Constraint& constraint);
     uint32_t findSecondWatcher(Constraint& constraint);
     //bool isUnassignedOrDisablingPrimary(Literal literal);
@@ -59,6 +75,7 @@ namespace DQRATCheck {
 
     vector<Literal> propagation_queue;
     vector<vector<CRef>> constraints_watched_by;
+	vector<vector<CRef>> occurrences_of;
     //vector<vector<WatchedRecord>> constraints_watched_by;
     //vector<CRef> constraints_without_two_watchers;
 
@@ -68,16 +85,26 @@ namespace DQRATCheck {
   inline void WatchedLiteralPropagator::addVariable() {
       constraints_watched_by.emplace_back();
       constraints_watched_by.emplace_back();
+      occurrences_of.emplace_back();
+      occurrences_of.emplace_back();
+	  is_assigned.push_back(false);
+	  value.push_back(false);
   }
 
   // TODO change to accept reason, put on propagation queue, create new decision level if necessary
   // TODO do we need decision levels? Do we want partial backtracks?
   // potential benefits: vivification, saved work on similar RUPs
   inline void WatchedLiteralPropagator::enqueue(Literal l) {
+	  //std::cout << "enqueuing " << var(l) << "=" << sign(l) << std::endl;
 	  Variable lv = var(l);
-	  value[lv] = sign(l);
-	  is_assigned[lv] = true;
+	  value[lv-1] = sign(l);
+	  is_assigned[lv-1] = true;
 	  trail.back().push_back(l);
+	  propagation_queue.push_back(l);
+  }
+
+  inline void WatchedLiteralPropagator::new_decision_level() {
+	  trail.push_back({});
   }
 
   // inline void WatchedLiteralPropagator::removeConstraint(CRef constraint_reference, ConstraintType constraint_type) {

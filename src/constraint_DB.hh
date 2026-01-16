@@ -35,7 +35,16 @@ namespace DQRATCheck {
 			virtual void notifyStart();
 			void updateLBD(Constraint& constraint);
 			void relocate(CRef& constraint_reference);
+
 			inline void registerVariable() { propagator.addVariable(); }
+			inline void new_decision_level() { propagator.new_decision_level(); }
+			inline void backtrack_before(unsigned int decision_level) { propagator.backtrack_before(decision_level); }
+			inline CRef propagate() { return propagator.propagate(); };
+			inline bool assigned(Variable v) { return propagator.assigned(v); };
+			inline bool satisfied(Literal l) { return propagator.satisfied(l); };
+			inline void enqueue(Literal l) { return propagator.enqueue(l); };
+			inline const vector<CRef>& occurrences_of(Literal l) { return propagator.occurrences_of[toInt(l)]; };
+			
 
 		protected:
 			void relocConstraintReferences();
