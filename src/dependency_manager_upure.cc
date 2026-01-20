@@ -8,14 +8,22 @@ namespace DQRATCheck {
 	DependencyManagerUPure::DependencyManagerUPure(DQBF& dqbf): DependencyManager(), dqbf(dqbf) {
 	}
 
+	void DependencyManagerUPure::addVariable(bool) {
+		variable_dependencies.emplace_back();
+		independencies_known.emplace_back();
+	}	
+
+	void DependencyManagerUPure::notifyStart() {
+	};
+
 	/*
 	 * computes the variables that depend *ON* v
 	 * v MUST be universal
 	 */
-	void DependencyManagerUPure::getDepsUPure(Variable v) {
-		if (independencies_known[v])
+	void DependencyManagerUPure::getDeps(Variable v) {
+		if (independencies_known[v-1])
 			return;
-		if (!dqbf.is_var_exists(v)) {
+		if (dqbf.is_var_exists(v)) {
 			return;
 		}
 		//clock_t t = clock();
@@ -37,7 +45,7 @@ namespace DQRATCheck {
 				}
 			}
 		}
-		independencies_known[v] = true;
+		independencies_known[v-1] = true;
 		//checker.solver_statistics.time_spent_computing_depscheme += clock()-t;
 	}
 
@@ -132,7 +140,7 @@ namespace DQRATCheck {
 
 	void DependencyManagerUPure::addNonDependency(Variable of, Variable on) {
 		//checker.statistics.nr_independencies++;
-		variable_dependencies[on].push_back(of);
+		variable_dependencies[on-1].push_back(of);
 	}
 
 }

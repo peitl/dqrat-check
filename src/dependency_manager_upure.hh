@@ -13,10 +13,12 @@ namespace DQRATCheck {
 			DependencyManagerUPure(DQBF& dqbf);
 
 			bool notDependsOn(Variable of, Variable on) const;
+			void getDeps(Variable v);
+			void addVariable(bool);
+			void notifyStart();
 
 		protected:
 			DQBF& dqbf;
-			void getDepsUPure(Variable v);
 			vector<bool> getReachable(Literal l);
 			//bool checkDependency(Variable of, Literal lof);
 			bool independenciesKnown(Variable of) const;

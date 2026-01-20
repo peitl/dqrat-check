@@ -17,11 +17,10 @@ int main(int argc, char** argv) {
 		std::cout << "no formula given" << std::endl;
 		return 1;
 	}
-	std::cout << formula_filename << std::endl;
-	std::cout << proof_filename << std::endl;
+	//std::cout << proof_filename << std::endl;
 	DQRATCheck::DQRATCheck checker = DQRATCheck::DQRATCheck();
 	if (checker.readDQBF(formula_filename)) {
-		std::cout << "formula read successfully" << std::endl;
+		std::cout << "formula '" << formula_filename << "' read successfully" << std::endl;
 		if (proof_filename == "") {
 			std::cout << "no proof given" << std::endl;
 			return 1;

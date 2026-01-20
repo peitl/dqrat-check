@@ -15,12 +15,16 @@ using std::sort;
 namespace DQRATCheck {
 
 	class DQBF;
+	class DependencyManager;
 
 	class ConstraintDB {
+		
+		friend class DQBF;	
 
 		public:
 			//ConstraintDB(DQRATCheck& checker);
 			ConstraintDB(DQBF& dqbf);
+			~ConstraintDB();
 			CRef addConstraint(vector<Literal>& literals);
 			Constraint& getConstraint(CRef constraint_reference);
 			vector<CRef>::const_iterator constraintReferencesBegin();
@@ -36,7 +40,7 @@ namespace DQRATCheck {
 			void updateLBD(Constraint& constraint);
 			void relocate(CRef& constraint_reference);
 
-			inline void registerVariable() { propagator.addVariable(); }
+			void addVariable(bool is_existential); 
 			inline void new_decision_level() { propagator.new_decision_level(); }
 			inline void backtrack_before(unsigned int decision_level) { propagator.backtrack_before(decision_level); }
 			inline CRef propagate() { return propagator.propagate(); };
@@ -44,6 +48,8 @@ namespace DQRATCheck {
 			inline bool satisfied(Literal l) { return propagator.satisfied(l); };
 			inline void enqueue(Literal l) { return propagator.enqueue(l); };
 			inline const vector<CRef>& occurrences_of(Literal l) { return propagator.occurrences_of[toInt(l)]; };
+
+			void universally_reduce(vector<Literal>& literals, bool clear_independencies = false);
 			
 
 		protected:
@@ -53,6 +59,7 @@ namespace DQRATCheck {
 			bool isLocked(Constraint& constraint, CRef constraint_reference);
 
 			DQBF& dqbf;
+			DependencyManager* dependency_manager;
 			WatchedLiteralPropagator propagator;
 			ConstraintAllocator constraints;
 			vector<CRef> constraint_list;

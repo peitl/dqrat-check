@@ -1,4 +1,5 @@
 #include "dqbf.hh"
+#include "dependency_manager.hh"
 
 namespace DQRATCheck {
 
@@ -23,7 +24,7 @@ namespace DQRATCheck {
 		
 		depset[internal] = std::unordered_set<Variable>(dependency_set.begin(), dependency_set.end());
 
-		constraint_database.registerVariable();
+		constraint_database.addVariable(true);
 		return internal;
 	}
 
@@ -36,7 +37,7 @@ namespace DQRATCheck {
 		external_name.push_back(original_name);
 		internal_name[original_name] = internal;
 
-		constraint_database.registerVariable();
+		constraint_database.addVariable(false);
 		return internal;
 	}
 
@@ -49,9 +50,36 @@ namespace DQRATCheck {
 			depset[of].insert(on);
 		}
 	}
-	void DQBF::delDependency(Variable of, Variable on) {
+	bool DQBF::delDependency(Variable of, Variable on) {
 		if (is_existential[of]) {
-			depset[of].erase(on);
+			if (constraint_database.dependency_manager->notDependsOn(of, on)) {
+				depset[of].erase(on);
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return true;
+		}
+	}
+
+	bool DQBF::is_var_outer_of_exivar(Variable v, Variable exivar) {
+		if (is_var_exists(v)) {
+			bool is_subset = true;
+			/*std::cout << "deps of " << externalize(exivar) << ":";
+			for (Variable exidep : depset[exivar]) {
+				std::cout << " " << externalize(exidep);
+			}
+			std::cout << std::endl;*/
+			for (Variable x : depset[v]) {
+				if (depset[exivar].find(x) == depset[exivar].end()) {
+					is_subset = false;
+					break;
+				}
+			}
+			return is_subset;
+		} else {
+			return depset[exivar].find(v) != depset[exivar].end();
 		}
 	}
 

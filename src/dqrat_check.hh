@@ -12,8 +12,8 @@ namespace DQRATCheck {
 
     DQBF dqbf;
 
-	bool negate_and_propagate(const Literal* lits, size_t num_lits, Literal skiplit);
-	bool negate_and_propagate(const vector<Literal>& lits, Literal lx);
+	bool negate_and_propagate(const Literal* lits, size_t num_lits, std::function<bool(Literal)> whichlits);
+	bool negate_and_propagate(const vector<Literal>& lits);
 
     public:
 

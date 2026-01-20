@@ -23,16 +23,75 @@ namespace DQRATCheck {
 	  string line;
 	  vector<Literal> lits;
 
-	  int token;
+	  string token;
+	  int numeric_token;
 	  uint32_t line_ctr = 0;
 	  while (ifs >> token) {
-		  if (token == 0) {
-			  line_ctr++;
-			  std::cout << "line " << line_ctr << " of the proof contains the literals ";
+		  line_ctr++;
+		  //std::cout << "line " << line_ctr << std::endl;
+		  if (token == "a") {
+			  // TODO add universal variables
+		  } else if (token == "e") {
+			  /* adds a new existential variable or updates the dependency set of an existing one
+			   * expects a positive integer followed by a sequence of possibly negative integers
+			   * negative numbers mean dependency removal
+			   * if the first variable is unknown, it is automatically added (as existential)
+			   * further unknown variables are automatically added as universal variables
+			   */
+			  Variable new_exi, new_exi_internal;
+			  ifs >> new_exi;
+			  if (!dqbf.external_var_already_exists(new_exi)) {
+				  //std::cout << "creating extension variable " << new_exi << std::endl;
+				  new_exi_internal = dqbf.addVarExists(new_exi, {});
+			  } else {
+				  new_exi_internal = dqbf.internalize(new_exi);
+			  }
+			  vector<Variable> dependency_set;
+			  Variable current_var;
+			  ifs >> current_var;
+			  bool success = true;
+			  while (current_var != 0) {
+				  if (current_var < 0) {
+					  if (dqbf.external_var_already_exists(-current_var)) {
+						  // TODO check if valid
+						  // delDependency should probably check itself and return bool indicator of validity
+						  if (!dqbf.delDependency(new_exi_internal, dqbf.internalize(-current_var))) {
+							  std::cout << "line " << line_ctr << ": removal of the dependency " << -current_var << " " << new_exi << " failed. The proof is not valid" << std::endl;
+							  success = false;
+							  break;
+						  } else {
+							  //std::cout << "successfully removed the dependency " << -current_var << " " << new_exi << std::endl;
+						  }
+					  }
+				  } else {
+					  Variable current_var_internal;
+					  if (!dqbf.external_var_already_exists(current_var)) {
+						  current_var_internal = dqbf.addVarForall(current_var);
+					  } else {
+						  current_var_internal = dqbf.internalize(current_var);
+					  }
+					  //std::cout << "adding dependency of " << new_exi << " on " << current_var << std::endl;
+					  dqbf.addDependency(new_exi_internal, current_var_internal);
+				  }
+				  ifs >> current_var;
+			  }
+			  if (!success) {
+				  break;
+			  }
+		  } else if (token == "d") {
+			  // TODO delete clause
+		  } else {
+			  // DQRAT clause addition
+			  numeric_token = atoi(token.c_str());
+			  while (numeric_token != 0) {
+				  lits.push_back(dqbf.internalize_literal(numeric_token));
+				  ifs >> numeric_token;
+			  }
+			  /*std::cout << "line " << line_ctr << " of the proof contains the literals ";
 			  for (Literal l : lits) {
 				  std::cout << get_dqbf().externalize(l) << " ";
 			  }
-			  std::cout << std::endl;
+			  std::cout << std::endl;*/
 			  if (check_DQRATA(lits)) {
 				  CRef cref = dqbf.addConstraint(lits);
 				  if (cref == CRef_Undef) {
@@ -44,34 +103,28 @@ namespace DQRATCheck {
 				  break;
 			  }
 			  lits.clear();
-		  } else {
-			  lits.push_back(get_dqbf().internalize_literal(token));
 		  }
 	  }
 	  ifs.close();
 	}
 
-	bool DQRATCheck::negate_and_propagate(const Literal* lits, size_t num_lits, Literal skiplit = Literal_Undef) {
+	bool DQRATCheck::negate_and_propagate(const Literal* lits, size_t num_lits, std::function<bool(Literal)> whichlits) {
 		dqbf.new_decision_level();
 		bool conflict = false;
 		for (size_t i = 0; i < num_lits; i++) {
 			Literal l = lits[i];
-			if (l == skiplit)
+			if (!whichlits(l)) {
 				continue;
-			//std::cout << "check_RUP: processing " << dqbf.externalize(l) << std::endl;
+			}
 			if (dqbf.satisfied(l)) {
-				//std::cout << "literal satisfied " << std::endl;
 				conflict = true;
 				break;
 			} else if (dqbf.satisfied(~l)) {
-				//std::cout << "literal falsified " << std::endl;
 				continue;
 			} else {
-				//std::cout << "variable unassigned " << std::endl;
 				dqbf.enqueue(~l);
 				CRef cref = dqbf.propagate();
 				if (cref != CRef_Undef) {
-					//std::cout << "conflict" << std::endl;
 					conflict = true;
 					break;
 				}
@@ -80,18 +133,14 @@ namespace DQRATCheck {
 		return conflict;
 	}
 
-	// negate and propagate the given literals, but skip lx
-	bool DQRATCheck::negate_and_propagate(const vector<Literal>& lits, Literal lx = Literal_Undef) {
-		return negate_and_propagate(&lits[0], lits.size(), lx);
+	// negate and propagate the given literals
+	bool DQRATCheck::negate_and_propagate(const vector<Literal>& lits) {
+		return negate_and_propagate(&lits[0], lits.size(), [] (Literal) -> bool {return true;});
 	}
 
+	// obsolete, is checked as part of DQRATA
 	bool DQRATCheck::check_RUP(const vector<Literal>& lits) {
 		bool is_rup = negate_and_propagate(lits);
-		if (is_rup) {
-			std::cout << "clause found to be RUP" << std::endl;
-		} else {
-			std::cout << "clause is not RUP at all" << std::endl;
-		}
 		std::cout << "backtracking" << std::endl;
 		dqbf.backtrack_before(1);
 		return is_rup;
@@ -104,16 +153,22 @@ namespace DQRATCheck {
 			return true;
 		}
 
-		if (!lits.empty()) {
+		if (!lits.empty() && dqbf.is_var_exists(var(lits[0]))) {
 			bool is_rat = true;
 			for (CRef cref : dqbf.constraint_database.occurrences_of(~lits[0])) {
 				Constraint& constraint = dqbf.constraint_database.getConstraint(cref);
-				if (!negate_and_propagate((Literal*) &constraint.data[0], constraint.size(), ~lits[0])) {
+				auto isouter = [&lits, this] (Literal l) -> bool {
+					return l != ~lits[0] && dqbf.is_var_outer_of_exivar(var(l), var(lits[0]));
+				};
+				if (!negate_and_propagate((Literal*) &constraint.data[0], constraint.size(), isouter)) {
 					is_rat = false;
 					break;
 				}
 				dqbf.backtrack_before(2);
 			}
+			/*if (is_rat) {
+				std::cout << "clause is RAT" << std::endl;
+			}*/
 			dqbf.backtrack_before(1);
 			return is_rat;
 		} else {

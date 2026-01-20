@@ -14,27 +14,31 @@ namespace DQRATCheck {
 
 		public:
 		virtual ~DependencyManager() {}
-		virtual void addVariable(bool auxiliary, bool is_existential) = 0;
+		virtual void addVariable(bool is_existential) = 0;
 		virtual void notifyStart() = 0;
+		virtual void getDeps(Variable v) = 0;
 
-		DependencyManager() {
-			variable_dependencies.resize(1);
-			independencies_known.resize(1);
-		}
-
-		// Implementation of inline methods.
-		inline bool notDependsOn(Variable of, Variable on) const {
+		// will calculate resolution paths if necessary
+		inline bool notDependsOn(Variable of, Variable on) {
+			if (!independenciesKnown(on)) {
+				getDeps(on);
+			}
 			return std::binary_search(variable_dependencies[on - 1].begin(),
 					variable_dependencies[on - 1].end(),
 					of);
 		}
 
 		inline bool independenciesKnown(Variable on) const {
-			return independencies_known[on];
+			return independencies_known[on-1];
 		}
 
 		inline bool numIndependencies(Variable on) const {
-			return variable_dependencies[on].size();
+			return variable_dependencies[on-1].size();
+		}
+
+		inline void makeIndependenciesUnknown(Variable on) {
+			independencies_known[on-1] = false;
+			variable_dependencies[on-1].clear();
 		}
 
 	};

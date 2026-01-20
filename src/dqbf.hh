@@ -14,6 +14,10 @@ using std::vector;
 namespace DQRATCheck {
 
 	class DQBF {
+		friend class ConstraintDB;
+
+		protected:
+
 		Variable max_var = 0;
 
 		std::unordered_map<Variable, Variable> internal_name;
@@ -35,7 +39,10 @@ namespace DQRATCheck {
 		void delVar(Variable original_name);
 
 		void addDependency(Variable of_name, Variable on_name);
-		void delDependency(Variable of_name, Variable on_name);
+		// returns true if deletion allowed by Dupure
+		bool delDependency(Variable of_name, Variable on_name);
+
+		bool is_var_outer_of_exivar(Variable v, Variable exivar);
 
 		CRef addConstraint(vector<Literal>& literals);
 
@@ -48,6 +55,10 @@ namespace DQRATCheck {
 		inline bool assigned(Variable v) { return constraint_database.assigned(v); }
 		inline bool satisfied(Literal l) { return constraint_database.satisfied(l); }
 		inline void enqueue(Literal l) { return constraint_database.enqueue(l); };
+
+		inline bool external_var_already_exists(Variable v) {
+			return internal_name.find(v) != internal_name.end();
+		}
 
 		inline bool is_var_exists(Variable v) {
 			return is_existential[v];

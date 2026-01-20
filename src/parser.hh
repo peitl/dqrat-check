@@ -23,6 +23,7 @@ namespace DQRATCheck {
 		}
 	}
 
+
 	class Parser {
 		bool use_model_generation;
 		std::map<string, int32_t> qcir_var_conversion_map;
