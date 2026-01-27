@@ -150,6 +150,7 @@ namespace DQRATCheck {
 	bool DQRATCheck::check_DQRATA(const vector<Literal>& lits) {
 		bool is_rup = negate_and_propagate(lits);
 		if (is_rup) {
+			dqbf.backtrack_before(1);
 			return true;
 		}
 

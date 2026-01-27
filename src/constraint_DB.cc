@@ -110,6 +110,11 @@ namespace DQRATCheck {
 					depset_union.find(vl) != depset_union.end()
 				) {
 				literals[j++] = literals[i];
+				/*if (!dqbf.is_var_exists(vl)) {
+					std::cout << "keeping the literal " << dqbf.externalize(literals[i]) << std::endl;
+				}*/
+			} else {
+				//std::cout << "reducing the literal " << dqbf.externalize(literals[i]) << std::endl;
 			}
 		}
 		literals.resize(j);

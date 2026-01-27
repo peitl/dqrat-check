@@ -88,14 +88,14 @@ namespace DQRATCheck {
 			return true;
 		}
 
-		if (!is_assigned[var(constraint[1])-1]) {
+		if (!assigned(var(constraint[1]))) {
 			std::swap(constraint[0], constraint[1]);
 		}
 
 		unsigned int i = 2; 
-		if (is_assigned[var(constraint[0])-1]) {
+		if (assigned(var(constraint[0]))) {
 			for (; i < constraint.size(); i++) {
-				if (!is_assigned[var(constraint[i])-1]) {
+				if (!assigned(var(constraint[i]))) {
 					std::swap(constraint[0], constraint[i]);
 					constraints_watched_by[toInt(constraint[0])].emplace_back(constraint_reference);
 					watcher_changed = true;
@@ -108,9 +108,9 @@ namespace DQRATCheck {
 			}
 		}
 
-		if (is_assigned[var(constraint[1])-1]) {
+		if (assigned(var(constraint[1]))) {
 			for (; i < constraint.size(); i++) {
-				if (!is_assigned[var(constraint[i])-1]) {
+				if (!assigned(var(constraint[i]))) {
 					std::swap(constraint[1], constraint[i]);
 					constraints_watched_by[toInt(constraint[1])].emplace_back(constraint_reference);
 					watcher_changed = true;
@@ -118,7 +118,7 @@ namespace DQRATCheck {
 				}
 			}
 
-			if (is_assigned[var(constraint[1])-1]) {
+			if (assigned(var(constraint[1]))) {
 				enqueue(constraint[0]);
 			}
 		}
