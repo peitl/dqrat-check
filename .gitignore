@@ -21,3 +21,13 @@ out/build/x64-Debug/CMakeFiles/ShowIncludes/main.c
 out/build/x64-Debug/CMakeFiles/TargetDirectories.txt
 *.log
 out/build/x64-Debug/VSInheritEnvironments.txt
+.vs/dqrat-check/v17/.wsuo
+out/build/x64-Debug/.ninja_deps
+out/build/x64-Debug/.ninja_log
+out/build/x64-Debug/src/CMakeFiles/dqrat-check.dir/embed.manifest
+out/build/x64-Debug/src/CMakeFiles/dqrat-check.dir/intermediate.manifest
+out/build/x64-Debug/src/CMakeFiles/dqrat-check.dir/manifest.rc
+out/build/x64-Debug/src/CMakeFiles/dqrat-check.dir/manifest.res
+out/build/x64-Debug/src/CMakeFiles/dqrat-check.dir/vc140.pdb
+out/build/x64-Debug/src/dqrat-check.ilk
+out/build/x64-Debug/src/dqrat-check.pdb
