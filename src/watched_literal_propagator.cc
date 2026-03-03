@@ -56,9 +56,6 @@ namespace DQRATCheck {
 			enqueue(constraint[0]);
 			return propagate() == CRef_Undef;
 		} else {
-			for (Literal l : constraint) {
-				occurrences_of[toInt(l)].push_back(constraint_reference);
-			}
 			constraints_watched_by[toInt(constraint[0])].push_back(constraint_reference);
 			constraints_watched_by[toInt(constraint[1])].push_back(constraint_reference);
 			bool watcher_changed;

@@ -85,8 +85,8 @@ namespace DQRATCheck {
   inline void WatchedLiteralPropagator::addVariable() {
       constraints_watched_by.emplace_back();
       constraints_watched_by.emplace_back();
-      occurrences_of.emplace_back();
-      occurrences_of.emplace_back();
+      //occurrences_of.emplace_back();
+      //occurrences_of.emplace_back();
 	  is_assigned.push_back(false);
 	  value.push_back(false);
   }

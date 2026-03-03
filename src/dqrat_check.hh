@@ -8,6 +8,42 @@ using std::string;
 
 namespace DQRATCheck {
 
+  enum ReadResult {
+	  READ,
+	  UNSAT,
+	  FORMULA_NOT_EXISTS,
+	  READ_OTHER
+  };
+
+  enum CheckResult {
+	  VERIFIED,
+	  FAILED,
+	  UNKNOWN,
+	  PROOF_NOT_EXISTS,
+	  PROOF_OTHER
+  };
+
+  enum DQRATRule {
+	  NORULE,
+	  LOCATE,
+	  DEL,
+	  RUP,
+	  UR,
+	  DQRATE,
+	  DQRATU,
+	  DPURE,
+	  COUNT
+  };
+
+  extern string rule_name[DQRATRule::COUNT];
+
+  struct DQRATCheckReport {
+	  CheckResult result = UNKNOWN;
+	  uint32_t line_no; // line number which failed to verify or which completed the proof
+	  DQRATRule rule[2] = {NORULE, NORULE}; // which rules were attempted in case of failure
+	  Variable vars[2] = {0, 0}; // which variables conflicted in case of dependency failure
+  };
+
   class DQRATCheck {
 
     DQBF dqbf;
@@ -17,7 +53,11 @@ namespace DQRATCheck {
 
     public:
 
+	ReadResult read_result = READ_OTHER;
+	DQRATCheckReport report;
+
 	void readDQRAT(string filename);
+	void scanClause(std::istream& ifs, vector<Literal>& lits);
 	bool readDQBF(string filename);
     inline DQBF& get_dqbf() {
       return dqbf;
@@ -25,6 +65,7 @@ namespace DQRATCheck {
 
 	bool check_RUP(const vector<Literal>& lits);
 	bool check_DQRATA(const vector<Literal>& lits);
+	bool check_DQRATU(const vector<Literal>& lits, Literal pivot);
 
     inline Constraint& get_clause(CRef cref) {
       return dqbf.constraint_database.getConstraint(cref);

@@ -1,6 +1,7 @@
 //#include "variable_data.hh"
 #include "watched_literal_propagator.hh"
 #include "constraint_DB.hh"
+#include <algorithm>
 #include <unordered_set>
 #include "dependency_manager_upure.hh"
 #include "dqbf.hh"
@@ -17,6 +18,7 @@ namespace DQRATCheck {
 		dependency_manager(new DependencyManagerUPure(dqbf)),
 		propagator(*this),
 		constraints(ConstraintAllocator()),
+		occurrences_of(vector<vector<CRef>>(2)),
 		ca_to(nullptr) {
 	}
 
@@ -25,14 +27,22 @@ namespace DQRATCheck {
 	}
 
 	void ConstraintDB::addVariable(bool is_existential) {
+		occurrences_of.emplace_back();
+		occurrences_of.emplace_back();
 		propagator.addVariable();
 		dependency_manager->addVariable(is_existential);
 	}
 
 	CRef ConstraintDB::addConstraint(vector<Literal>& literals) {
-		universally_reduce(literals, CLEAR_INDEPENDENCIES);
+		//std::cout << "adding " << literals;
+		// TODO figure out how exactly independencies can be preserved
+		//universally_reduce(literals, CLEAR_INDEPENDENCIES);
 		CRef constraint_reference = constraints.alloc(literals);
 		constraint_list.push_back(constraint_reference);
+		Constraint& constraint = getConstraint(constraint_reference);
+		for (Literal l : constraint) {
+			getOcc(l).push_back(constraint_reference);
+		}
 		if (propagator.addConstraint(constraint_reference)) {
 			return constraint_reference;
 		} else {
@@ -41,23 +51,23 @@ namespace DQRATCheck {
 		}
 	}
 
-	void ConstraintDB::relocConstraintReferences() {
-		for (auto it = literal_occurrences.begin(); it != literal_occurrences.end(); ++it) {
-			vector<CRef>& occ_crefs = it->second;
-			//size_t tainted_idx = occ_crefs.size();
-			size_t i, j;
-			for (i = 0, j = 0; i < occ_crefs.size(); i++) {
-				CRef& constraint_reference = occ_crefs[i];
-				/* Since literal occurrences only consider input constraints, there is no need to check whether the
-				   corresponding constraint has been marked for removal. */
-				// when considering tainting, we unfortunately have to check markedness again
-				if (!getConstraint(constraint_reference).isMarked()) {
-					relocate(constraint_reference); 
-					occ_crefs[j++] = occ_crefs[i];
-				}
+	void ConstraintDB::relocVector(vector<CRef>& crefs) {
+		size_t i, j;
+		for (i = 0, j = 0; i < crefs.size(); i++) {
+			CRef& constraint_reference = crefs[i];
+			if (!getConstraint(constraint_reference).isMarked()) {
+				relocate(constraint_reference); 
+				crefs[j++] = crefs[i];
 			}
-			occ_crefs.resize(j);
 		}
+		crefs.resize(j);
+	}
+
+	void ConstraintDB::relocConstraintReferences() {
+		for (vector<CRef>& occ_crefs : occurrences_of) {
+			relocVector(occ_crefs);
+		}
+		relocVector(constraint_list);
 	}
 
 	void ConstraintDB::relocAll() {
@@ -65,7 +75,7 @@ namespace DQRATCheck {
 		ConstraintAllocator to(constraints.size() - constraints.wasted());
 		ca_to = &to;
 
-		//checker.propagator->relocConstraintReferences();
+		propagator.relocConstraintReferences();
 		//checker.variable_data_store->relocConstraintReferences();
 		relocConstraintReferences();
 
@@ -107,7 +117,7 @@ namespace DQRATCheck {
 			Variable vl = var(literals[i]);
 			if (
 					dqbf.is_var_exists(vl) ||
-					depset_union.find(vl) != depset_union.end()
+					dqbf.contains(vl, depset_union)
 				) {
 				literals[j++] = literals[i];
 				/*if (!dqbf.is_var_exists(vl)) {
@@ -118,6 +128,47 @@ namespace DQRATCheck {
 			}
 		}
 		literals.resize(j);
+	}
+
+	CRef ConstraintDB::retrieveSortedConstraint(const vector<Literal>& literals) {
+		//std::cout << "retrieve " << literals;
+		Literal least_occ_lit = literals[0];
+		size_t lolsz = getOcc(least_occ_lit).size();
+		for (size_t i = 1; i < literals.size(); i++) {
+			if (getOcc(literals[i]).size() < lolsz) {
+				least_occ_lit = literals[i];
+				lolsz = getOcc(least_occ_lit).size();
+			}
+		}
+		// TODO fix this
+		//std::cout << "about to search by literal " << dqbf.externalize(least_occ_lit) << " which occurs in " << getOcc(least_occ_lit).size() << " constraints" << std::endl;
+		for (std::vector<CRef>::const_reverse_iterator rit = occ_rbegin(least_occ_lit);
+				rit != occ_rend(least_occ_lit); rit++) {
+			Constraint& clause = getConstraint(*rit);
+			if (clause.size() == literals.size()) {
+				bool equal = true;
+				for (Literal lit : clause) {
+					if (!std::binary_search(literals.begin(), literals.end(), lit)) {
+						equal = false;
+						break;
+					}
+				}
+				if (equal) {
+					return *rit;
+				}
+				continue;
+			}
+		}
+		return CRef_Undef;
+	}
+
+	void ConstraintDB::deleteClause(CRef cref) {
+		getConstraint(cref).mark();
+		num_del_cons++;
+		if (num_del_cons > DELETION_THRESHOLD) {
+			relocAll();
+			num_del_cons = 0;
+		}
 	}
 
 }

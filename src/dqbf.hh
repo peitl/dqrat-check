@@ -42,7 +42,16 @@ namespace DQRATCheck {
 		// returns true if deletion allowed by Dupure
 		bool delDependency(Variable of_name, Variable on_name);
 
+		// set operations
+		std::unordered_set<Variable> union_of(const std::vector<std::unordered_set<Variable>*>&);
+		std::unordered_set<Variable> intersection_of(const std::vector<std::unordered_set<Variable>*>&);
+		inline bool contains(Variable elem, const std::unordered_set<Variable>& set) {
+			return set.find(elem) != set.end();
+		}
+		bool is_subset_of(const std::unordered_set<Variable>& subset, const std::unordered_set<Variable>& bigset);
+
 		bool is_var_outer_of_exivar(Variable v, Variable exivar);
+		bool is_var_outer_of_univar(Variable v, Variable univar);
 
 		CRef addConstraint(vector<Literal>& literals);
 

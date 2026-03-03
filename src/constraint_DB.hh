@@ -12,6 +12,8 @@ using std::vector;
 using std::unordered_map;
 using std::sort;
 
+#define DELETION_THRESHOLD 1000
+
 namespace DQRATCheck {
 
 	class DQBF;
@@ -26,14 +28,21 @@ namespace DQRATCheck {
 			ConstraintDB(DQBF& dqbf);
 			~ConstraintDB();
 			CRef addConstraint(vector<Literal>& literals);
+			CRef retrieveSortedConstraint(const vector<Literal>& literals);
 			Constraint& getConstraint(CRef constraint_reference);
 			vector<CRef>::const_iterator constraintReferencesBegin();
 			vector<CRef>::const_iterator constraintReferencesEnd();
-			inline vector<CRef>::const_iterator literalOccurrencesBegin(Literal l) {
-				return literal_occurrences[l].begin();
+			inline vector<CRef>::const_iterator occ_begin(Literal l) {
+				return getOcc(l).begin();
 			}
-			inline vector<CRef>::const_iterator literalOccurrencesEnd(Literal l) {
-				return literal_occurrences[l].end();
+			inline vector<CRef>::const_iterator occ_end(Literal l) {
+				return getOcc(l).end();
+			}
+			inline vector<CRef>::const_reverse_iterator occ_rbegin(Literal l) {
+				return getOcc(l).rbegin();
+			}
+			inline vector<CRef>::const_reverse_iterator occ_rend(Literal l) {
+				return getOcc(l).rend();
 			}
 			void bumpConstraintActivity(Constraint& constraint, ConstraintType constraint_type);
 			virtual void notifyStart();
@@ -47,13 +56,15 @@ namespace DQRATCheck {
 			inline bool assigned(Variable v) { return propagator.assigned(v); };
 			inline bool satisfied(Literal l) { return propagator.satisfied(l); };
 			inline void enqueue(Literal l) { return propagator.enqueue(l); };
-			inline const vector<CRef>& occurrences_of(Literal l) { return propagator.occurrences_of[toInt(l)]; };
+			inline vector<CRef>& getOcc(Literal l) { return occurrences_of[toInt(l)]; };
 
 			void universally_reduce(vector<Literal>& literals, bool clear_independencies = false);
+			void deleteClause(CRef cref);
 			
 
 		protected:
 			void relocConstraintReferences();
+			void relocVector(vector<CRef>& crefs);
 			void relocAll();
 			void cleanConstraints();
 			bool isLocked(Constraint& constraint, CRef constraint_reference);
@@ -63,8 +74,10 @@ namespace DQRATCheck {
 			WatchedLiteralPropagator propagator;
 			ConstraintAllocator constraints;
 			vector<CRef> constraint_list;
-			unordered_map<Literal, vector<CRef>> literal_occurrences;
+			vector<vector<CRef>> occurrences_of;
 			ConstraintAllocator* ca_to;
+
+			unsigned int num_del_cons = 0;
 	};
 
 	// Implementation of inline methods.

@@ -92,8 +92,8 @@ namespace DQRATCheck {
 				continue;
 			explored[current_lit_idx] = true;
 
-			for (auto occit = dqbf.constraint_database.literalOccurrencesBegin(current_lit);
-					occit != dqbf.constraint_database.literalOccurrencesEnd(current_lit);
+			for (auto occit = dqbf.constraint_database.getOcc(current_lit).begin();
+					occit != dqbf.constraint_database.getOcc(current_lit).end();
 					occit++) {
 				//auto fel_ref = first_entry_literal.find(*occit);
 				Constraint& clause = dqbf.constraint_database.getConstraint(*occit);
