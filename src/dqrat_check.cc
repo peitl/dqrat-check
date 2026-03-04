@@ -89,7 +89,7 @@ namespace DQRATCheck {
 						  // delDependency should probably check itself and return bool indicator of validity
 						  if (!dqbf.delDependency(new_exi_internal, dqbf.internalize(-current_var))) {
 							  success = false;
-							  report = {FAILED, line_ctr, {}, {-current_var, new_exi}};
+							  report = {FAILED, line_ctr, {DPURE}, {-current_var, new_exi}};
 							  break;
 						  } else {
 							  //std::cout << "successfully removed the dependency " << -current_var << " " << new_exi << std::endl;

@@ -24,6 +24,9 @@ namespace DQRATCheck {
 		internal_name[original_name] = internal;
 		
 		depset[internal] = std::unordered_set<Variable>(dependency_set.begin(), dependency_set.end());
+		for (Variable u : dependency_set) {
+			constraint_database.dependency_manager->makeIndependenciesUnknown(u);
+		}
 
 		constraint_database.addVariable(true);
 		return internal;
@@ -86,9 +89,7 @@ namespace DQRATCheck {
 	std::unordered_set<Variable> DQBF::union_of(const std::vector<std::unordered_set<Variable>*>& sets) {
 		std::unordered_set<Variable> set_union;
 		for (const std::unordered_set<Variable>* set : sets) {
-			for (Variable elem : *set) {
-				set_union.insert(elem);
-			}
+			set_union.insert(set->begin(), set->end());
 		}
 		return set_union;
 	}
@@ -97,7 +98,6 @@ namespace DQRATCheck {
 		std::unordered_set<Variable> set_intersection;
 		if (sets.empty())
 			return set_intersection;
-		// copy sets[0] to set_intersection
 		for (Variable v : *sets[0]) {
 			bool in_intersection = true;
 			for (size_t i = 1; i < sets.size(); i++) {

@@ -2,6 +2,7 @@
 #include "watched_literal_propagator.hh"
 #include "constraint_DB.hh"
 #include <algorithm>
+#include <iterator>
 #include <unordered_set>
 #include "dependency_manager_upure.hh"
 #include "dqbf.hh"
@@ -37,6 +38,16 @@ namespace DQRATCheck {
 		//std::cout << "adding " << literals;
 		// TODO figure out how exactly independencies can be preserved
 		//universally_reduce(literals, CLEAR_INDEPENDENCIES);
+		std::vector<std::unordered_set<Variable>*> exi;
+		for (Literal l : literals) {
+			Variable vl = var(l);
+			if (dqbf.is_var_exists(vl)) {
+				exi.push_back(&dqbf.depset[vl]);
+			}
+		}
+		for (Variable u : dqbf.union_of(exi)) {
+			dependency_manager->makeIndependenciesUnknown(u);
+		}
 		CRef constraint_reference = constraints.alloc(literals);
 		constraint_list.push_back(constraint_reference);
 		Constraint& constraint = getConstraint(constraint_reference);
