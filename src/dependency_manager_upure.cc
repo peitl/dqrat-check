@@ -61,7 +61,7 @@ namespace DQRATCheck {
 		 */
 
 		uint32_t num_vars = dqbf.get_max_var();
-		uint32_t num_lits = num_vars * 2;
+		uint32_t num_lits = num_vars * 2 + 2;  // was: num_vars * 2
 
 		Variable lvar = var(l);
 		bool lqtype = !dqbf.is_var_exists(lvar);
