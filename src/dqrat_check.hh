@@ -20,7 +20,8 @@ namespace DQRATCheck {
 	  FAILED,
 	  UNKNOWN,
 	  PROOF_NOT_EXISTS,
-	  PROOF_OTHER
+	  PROOF_OTHER,
+	  RESULT_COUNT
   };
 
   enum DQRATRule {
@@ -32,16 +33,23 @@ namespace DQRATCheck {
 	  DQRATE,
 	  DQRATU,
 	  DPURE,
-	  COUNT
+	  RULE_COUNT
   };
 
-  extern string rule_name[DQRATRule::COUNT];
+  struct DQRATECheckResult {
+	  bool success;
+	  CRef blocker;
+  };
+
+  extern string rule_name[DQRATRule::RULE_COUNT];
+  extern string result_name[CheckResult::RESULT_COUNT];
 
   struct DQRATCheckReport {
 	  CheckResult result = UNKNOWN;
 	  uint32_t line_no; // line number which failed to verify or which completed the proof
 	  DQRATRule rule[2] = {NORULE, NORULE}; // which rules were attempted in case of failure
 	  Variable vars[2] = {0, 0}; // which variables conflicted in case of dependency failure
+	  CRef cref = CRef_Undef; // which variables conflicted in case of dependency failure
   };
 
   class DQRATCheck {
@@ -64,17 +72,19 @@ namespace DQRATCheck {
     }
 
 	bool check_RUP(const vector<Literal>& lits);
-	bool check_DQRATA(const vector<Literal>& lits);
+	DQRATECheckResult check_DQRATE(const vector<Literal>& lits);
 	bool check_DQRATU(const vector<Literal>& lits, Literal pivot);
 
     inline Constraint& get_clause(CRef cref) {
       return dqbf.constraint_database.getConstraint(cref);
     }
 
+	void printResult();
+
     struct {
       uint64_t propagations = 0;
       uint64_t watched_list_accesses = 0;
-      uint64_t spurious_watch_events = 0;
+	  uint64_t lemmas_of_type[DQRATRule::RULE_COUNT];
     } statistics;
 
   };

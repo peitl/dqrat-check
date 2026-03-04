@@ -5,7 +5,7 @@
 
 namespace DQRATCheck {
 
-	string rule_name[DQRATRule::COUNT] = {
+	string rule_name[RULE_COUNT] = {
 		"NORULE",
 		"LOCATE",
 		"DEL",
@@ -15,6 +15,18 @@ namespace DQRATCheck {
 		"DQRATU",
 		"DPURE"
 	};
+
+	string result_name[RESULT_COUNT] = {
+	  "s VERIFIED",
+	  "s FAILED",
+	  "s UNKNOWN",
+	  "s PROOF_NOT_EXISTS",
+	  "s PROOF_OTHER"
+	};
+
+	void DQRATCheck::printResult() {
+		std::cout << result_name[report.result] << std::endl;
+	}
 
 	bool DQRATCheck::readDQBF(string filename) {
 	  std::ifstream ifs(filename);
@@ -126,7 +138,7 @@ namespace DQRATCheck {
 			  Literal pivot = lits[0]; // remember pivot because we will sort
 			  Variable pvar = var(pivot);
 			  if (dqbf.is_var_exists(pvar)) {
-				  report = {FAILED, line_ctr, {UR}, {dqbf.externalize(pvar)}};
+				  report = {FAILED, line_ctr, {UR}, {dqbf.externalize(pivot)}};
 				  break;
 			  }
 			  sort(lits.begin(), lits.end());
@@ -147,6 +159,7 @@ namespace DQRATCheck {
 				  }
 			  }
 			  if (pivot_reducible) {
+				  statistics.lemmas_of_type[UR]++;
 				  std::vector<Literal>::iterator pivot_idx = std::lower_bound(lits.begin(), lits.end(), pivot);
 				  std::swap(*pivot_idx, lits.back());
 				  lits.pop_back();
@@ -157,6 +170,7 @@ namespace DQRATCheck {
 				  }
 			  } else {
 				  if (check_DQRATU(lits, pivot)) {
+					  statistics.lemmas_of_type[DQRATU]++;
 					  CRef cref = dqbf.addConstraint(lits);
 					  if (cref == CRef_Undef) {
 						  report = {VERIFIED, line_ctr, {}};
@@ -179,14 +193,15 @@ namespace DQRATCheck {
 				  std::cout << get_dqbf().externalize(l) << " ";
 			  }
 			  std::cout << std::endl;*/
-			  if (check_DQRATA(lits)) {
+			  DQRATECheckResult res = check_DQRATE(lits);
+			  if (res.success) {
 				  CRef cref = dqbf.addConstraint(lits);
 				  if (cref == CRef_Undef) {
 					  report = {VERIFIED, line_ctr};
 					  break;
 				  }
 			  } else {
-				  report = {FAILED, line_ctr, {RUP, DQRATE}};
+				  report = {FAILED, line_ctr, {RUP, DQRATE}, {}, res.blocker};
 				  break;
 			  }
 		  }
@@ -233,24 +248,30 @@ namespace DQRATCheck {
 		return is_rup;
 	}
 
-	// check DQRAT property: assuming lits[0] is the RAT literal
-	bool DQRATCheck::check_DQRATA(const vector<Literal>& lits) {
+	/* check DQRAT property: assuming lits[0] is the RAT literal
+	 * return values:
+	 *   0 RUP
+	 *   1 RAT
+	 *   2 RAT
+	 */
+	DQRATECheckResult DQRATCheck::check_DQRATE(const vector<Literal>& lits) {
 		bool is_rup = negate_and_propagate(lits);
 		if (is_rup) {
+			statistics.lemmas_of_type[RUP]++;
 			dqbf.backtrack_before(1);
-			return true;
+			return {true, CRef_Undef};
 		}
 
 		if (!lits.empty() && dqbf.is_var_exists(var(lits[0]))) {
-			bool is_rat = true;
+			CRef blocker = CRef_Undef;
 			for (CRef cref : dqbf.constraint_database.getOcc(~lits[0])) {
 				Constraint& constraint = dqbf.constraint_database.getConstraint(cref);
 				std::function<bool(Literal)> isouter = [&lits, this] (Literal l) -> bool {
 					return l != ~lits[0] && dqbf.is_var_outer_of_exivar(var(l), var(lits[0]));
 				};
 				if (!negate_and_propagate((Literal*) &constraint.data[0], constraint.size(), isouter)) {
-					std::cout << "failing RAT against constraint " << constraint << std::endl;
-					is_rat = false;
+					//std::cout << "c failing RAT against constraint " << constraint << std::endl;
+					blocker = cref;
 					break;
 				}
 				dqbf.backtrack_before(2);
@@ -259,9 +280,12 @@ namespace DQRATCheck {
 				std::cout << "clause is RAT" << std::endl;
 			}*/
 			dqbf.backtrack_before(1);
-			return is_rat;
+			if (blocker == CRef_Undef) {
+				statistics.lemmas_of_type[DQRATE]++;
+			}
+			return {blocker == CRef_Undef, blocker};
 		} else {
-			return false;
+			return {false, CRef_Undef};
 		}
 	}
 
