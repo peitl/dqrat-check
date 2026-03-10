@@ -209,6 +209,14 @@ namespace DQRATCheck {
 			  // DQRAT clause addition
 			  numeric_token = atoi(token.c_str());
 			  while (numeric_token != 0) {
+				  if (!dqbf.external_var_already_exists(abs(numeric_token))) {
+					  if (lits.empty()) {
+						  std::cout << "c WARNING: QRAT syntax on line " << line_ctr << std::endl;
+						  std::cout << "c extension variables should be introduced with explicit dependency sets in DQRAT on lines starting with e" << std::endl;
+						  Variable new_exi = abs(numeric_token);
+						  dqbf.addVarExists(new_exi, dqbf.univars);
+					  }
+				  }
 				  lits.push_back(dqbf.internalize_literal(numeric_token));
 				  ifs >> numeric_token;
 			  }
@@ -281,6 +289,7 @@ namespace DQRATCheck {
 	DQRATECheckResult DQRATCheck::check_DQRATE(const vector<Literal>& lits) {
 		// TODO create var(lits[0]) to depend on all universal variables
 		// but print warning
+
 		bool is_rup = negate_and_propagate(lits);
 		if (is_rup) {
 			statistics.lemmas_of_type[RUP]++;

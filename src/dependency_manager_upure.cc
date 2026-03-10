@@ -81,7 +81,7 @@ namespace DQRATCheck {
 		Literal negl = ~l;
 
 		//uint32_t max_target_lits = 2*solver.variable_data_store->countVarsOfTypeRightOf(target_qtype, lvar);
-		uint32_t max_target_lits = 2*dqbf.get_max_var();
+		uint32_t max_target_lits = 2*dqbf.exivars.size();
 
 		uint32_t target_lits_found = 0;
 		while (!landing_literals.empty()) {
@@ -109,18 +109,23 @@ namespace DQRATCheck {
 					continue;
 				//first_entry_literal[*occit] = current_lit;
 				for (Literal lit : clause) {
+					// only explore if lit != current_lit
+					// entry and exit literals must be different
+					if (lit == current_lit)
+						continue;
 					if (!explored[toInt(~lit)]) {
 						Variable litvar = var(lit);
 						int lit_idx = toInt(lit);
 						bool litvarqtype = !dqbf.is_var_exists(litvar);
-						if (litvarqtype == 0 && l <= lit) {
+						if (litvarqtype == 0 && dqbf.contains(lvar, dqbf.depset[litvar])) {
 							landing_literals.push(~lit);
 						}
-						if (litvarqtype == target_qtype && l < lit) {
+						if (litvarqtype == target_qtype && dqbf.contains(lvar, dqbf.depset[litvar])) {
 							/* lit is validly reached by the current path */
+							//std::cout << "can reach (" << dqbf.externalize(l) << ")-->(" << dqbf.externalize(lit) << ")" << std::endl;
 							if (!reachable[lit_idx]) {
 								reachable[lit_idx] = true;
-								max_target_lits++;
+								target_lits_found++;
 							}
 						}
 					}

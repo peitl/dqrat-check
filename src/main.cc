@@ -66,6 +66,7 @@ int main(int argc, char** argv) {
 							if (checker.report.rule[1] != DQRATCheck::NORULE) {
 								std::cout << ", " <<  DQRATCheck::rule_name[checker.report.rule[1]];
 							}
+							std::cout << std::endl;
 						if (checker.report.cref != DQRATCheck::CRef_Undef) {
 							DQRATCheck::Constraint& clause = checker.get_dqbf().constraint_database.getConstraint(checker.report.cref);
 							std::cout << "c offending side clause for DQRATE:";

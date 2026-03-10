@@ -15,6 +15,8 @@ namespace DQRATCheck {
 
 	class DQBF {
 		friend class ConstraintDB;
+		friend class DQRATCheck;
+		friend class DependencyManagerUPure;
 
 		protected:
 
