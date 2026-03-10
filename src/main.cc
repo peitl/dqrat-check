@@ -34,30 +34,48 @@ int main(int argc, char** argv) {
 				std::cout << "c line " << checker.report.line_no << ": unit propagation derived conflict, stopping the proof check here. The proof is valid" << std::endl;
 				break;
 			case DQRATCheck::FAILED:
-				if (checker.report.rule[0] == DQRATCheck::DPURE || checker.report.rule[1] == DQRATCheck::DPURE) {
-					std::cout << "c line " << checker.report.line_no << ": removal of the dependency " << checker.report.vars[0] << " " << checker.report.vars[1] << " failed. The proof is not valid" << std::endl;
-					std::cout << "s FAILED" << std::endl;
-				} else if (checker.report.rule[0] == DQRATCheck::LOCATE) {
-					std::cout << "c line " << checker.report.line_no << ": " <<
-						"lemma does not exist. The proof is invalid (attempted rule: " << DQRATCheck::rule_name[checker.report.rule[1]] << ")" << std::endl;
-				} else if (checker.report.rule[0] == DQRATCheck::UR && checker.report.rule[1] == DQRATCheck::NORULE) {
-				    std::cout << "c line " << checker.report.line_no << ": cannot reduce existential literal " << checker.report.vars[0] << std::endl;
-
-				} else {
-					std::cout << "c line " << checker.report.line_no << ": lemma was checked for: " << DQRATCheck::rule_name[checker.report.rule[0]];
-					if (checker.report.rule[1] != DQRATCheck::NORULE) {
-						std::cout << ", " <<  DQRATCheck::rule_name[checker.report.rule[1]];
-					}
-					std:: cout << ". The check has failed. The proof is invalid" << std::endl;
-					if (checker.report.cref != DQRATCheck::CRef_Undef) {
-						DQRATCheck::Constraint& clause = checker.get_dqbf().constraint_database.getConstraint(checker.report.cref);
-						std::cout << "c offending side clause for DQRATE:";
-						for (DQRATCheck::Literal l : clause) {
-							std::cout << " " << checker.get_dqbf().externalize(l);
+				switch (checker.report.rule[0]) {
+					case DQRATCheck::DPURE:
+						std::cout << "c line " << checker.report.line_no << ": " <<
+							"removal of the dependency " << checker.report.vars[0] << " " << checker.report.vars[1] << " failed" << std::endl;
+						break;
+					case DQRATCheck::LOCATE:
+						std::cout << "c line " << checker.report.line_no << ": " <<
+							"lemma does not exist (attempted rule: " << DQRATCheck::rule_name[checker.report.rule[1]] << ")" << std::endl;
+						break;
+					case DQRATCheck::UADD:
+						if (checker.report.vars[0] < 0) {
+							std::cout << "c line " << checker.report.line_no << ": " <<
+								"cannot add negative literal " << checker.report.vars[0] << std::endl;;
+						} else {
+							std::cout << "c line " << checker.report.line_no << ": " <<
+								"cannot re-add existing variable " << checker.report.vars[0] << std::endl;;
 						}
-						std::cout << std::endl;
-					}
+						break;
+					case DQRATCheck::UR:
+						if(checker.report.rule[1] == DQRATCheck::NORULE) {
+							std::cout << "c line " << checker.report.line_no << ": " <<
+								"cannot reduce existential literal " << checker.report.vars[0] << std::endl;
+							break;
+						} else {
+							//fallthrough
+						}
+					default:
+						std::cout << "c line " << checker.report.line_no << ": " <<
+							"lemma was checked for: " << DQRATCheck::rule_name[checker.report.rule[0]];
+							if (checker.report.rule[1] != DQRATCheck::NORULE) {
+								std::cout << ", " <<  DQRATCheck::rule_name[checker.report.rule[1]];
+							}
+						if (checker.report.cref != DQRATCheck::CRef_Undef) {
+							DQRATCheck::Constraint& clause = checker.get_dqbf().constraint_database.getConstraint(checker.report.cref);
+							std::cout << "c offending side clause for DQRATE:";
+							for (DQRATCheck::Literal l : clause) {
+								std::cout << " " << checker.get_dqbf().externalize(l);
+							}
+							std::cout << std::endl;
+						}
 				}
+				std:: cout << "c the check has failed. The proof is invalid" << std::endl;
 				break;
 			case DQRATCheck::UNKNOWN:
 				std::cout << "c lemmas are correct, but there is no conflict at the end" << std::endl;

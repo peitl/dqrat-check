@@ -9,6 +9,7 @@ namespace DQRATCheck {
 		"NORULE",
 		"LOCATE",
 		"DEL",
+		"UADD",
 		"RUP",
 		"UR",
 		"DQRATE",
@@ -74,7 +75,30 @@ namespace DQRATCheck {
 		  line_ctr++;
 		  //std::cout << "line " << line_ctr << std::endl;
 		  if (token == "a") {
-			  // TODO add universal variables
+			  // add universal variables
+			  Variable current_var;
+			  ifs >> current_var;
+			  bool success = true;
+			  while (current_var != 0) {
+				  if (current_var < 0) {
+					  if (dqbf.external_var_already_exists(-current_var)) {
+						  success = false;
+						  report = {FAILED, line_ctr, {UADD}, {current_var}};
+						  break;
+					  }
+				  } else {
+					  if (!dqbf.external_var_already_exists(current_var)) {
+						  dqbf.addVarForall(current_var);
+					  } else {
+						  success = false;
+						  report = {FAILED, line_ctr, {UADD}, {current_var}};
+						  break;
+					  }
+				  }
+				  ifs >> current_var;
+			  }
+			  if (!success)
+				  break;
 		  } else if (token == "e") {
 			  /* adds a new existential variable or updates the dependency set of an existing one
 			   * expects a positive integer followed by a sequence of possibly negative integers
@@ -255,6 +279,8 @@ namespace DQRATCheck {
 	 *   2 RAT
 	 */
 	DQRATECheckResult DQRATCheck::check_DQRATE(const vector<Literal>& lits) {
+		// TODO create var(lits[0]) to depend on all universal variables
+		// but print warning
 		bool is_rup = negate_and_propagate(lits);
 		if (is_rup) {
 			statistics.lemmas_of_type[RUP]++;

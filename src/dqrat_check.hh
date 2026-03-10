@@ -28,6 +28,7 @@ namespace DQRATCheck {
 	  NORULE,
 	  LOCATE,
 	  DEL,
+	  UADD,
 	  RUP,
 	  UR,
 	  DQRATE,
