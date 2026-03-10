@@ -235,6 +235,7 @@ namespace DQRATCheck {
 	}
 
 	bool DQRATCheck::negate_and_propagate(const Literal* lits, size_t num_lits, std::function<bool(Literal)> whichlits) {
+		//std::cout << "calling n&p" << std::endl;
 		dqbf.new_decision_level();
 		bool conflict = false;
 		for (size_t i = 0; i < num_lits; i++) {
@@ -248,6 +249,7 @@ namespace DQRATCheck {
 			} else if (dqbf.satisfied(~l)) {
 				continue;
 			} else {
+				//std::cout << "dec ";
 				dqbf.enqueue(~l);
 				CRef cref = dqbf.propagate();
 				if (cref != CRef_Undef) {
@@ -256,6 +258,7 @@ namespace DQRATCheck {
 				}
 			}
 		}
+		//std::cout << "n&p finished" << std::endl;
 		return conflict;
 	}
 

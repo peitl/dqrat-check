@@ -91,18 +91,6 @@ namespace DQRATCheck {
 	  value.push_back(false);
   }
 
-  // TODO change to accept reason, put on propagation queue, create new decision level if necessary
-  // TODO do we need decision levels? Do we want partial backtracks?
-  // potential benefits: vivification, saved work on similar RUPs
-  inline void WatchedLiteralPropagator::enqueue(Literal l) {
-	  //std::cout << "enqueuing " << var(l) << "=" << sign(l) << std::endl;
-	  Variable lv = var(l);
-	  value[lv-1] = sign(l);
-	  is_assigned[lv-1] = true;
-	  trail.back().push_back(l);
-	  propagation_queue.push_back(l);
-  }
-
   inline void WatchedLiteralPropagator::new_decision_level() {
 	  trail.push_back({});
   }
