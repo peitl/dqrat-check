@@ -1,9 +1,11 @@
 #include <string>
 #include "dqrat_check.hh"
+#include <time.h>
 
 using std::string;
 
 int main(int argc, char** argv) {
+	clock_t clock_begin = clock();
 	string formula_filename = "";
 	string proof_filename = "";
 	for (int i = 1; i < argc; i++) {
@@ -96,5 +98,9 @@ int main(int argc, char** argv) {
 		std::cout << "s VERIFIED" << std::endl;
 	}
 
+	clock_t clock_end = clock();
+	double dur = (double)(clock_end - clock_begin) / CLOCKS_PER_SEC;
+
+	std::cout << "c DQRAT-check time: " <<  dur << std::endl;
 	return 0;
 }

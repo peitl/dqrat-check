@@ -22,6 +22,7 @@ namespace DQRATCheck {
 	class ConstraintDB {
 		
 		friend class DQBF;	
+		friend class WatchedLiteralPropagator;	
 
 		public:
 			//ConstraintDB(DQRATCheck& checker);

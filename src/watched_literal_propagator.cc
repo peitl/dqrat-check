@@ -1,5 +1,6 @@
 #include "watched_literal_propagator.hh"
 #include "constraint_DB.hh"
+#include "dqbf.hh"
 
 namespace DQRATCheck {
 
@@ -121,6 +122,19 @@ namespace DQRATCheck {
 		}
 
 		return true;
+	}
+
+
+	// TODO change to accept reason, put on propagation queue, create new decision level if necessary
+	// TODO do we need decision levels? Do we want partial backtracks?
+	// potential benefits: vivification, saved work on similar RUPs
+	void WatchedLiteralPropagator::enqueue(Literal l) {
+		//std::cout << "enqueuing " << constraint_database.dqbf.externalize(l) << std::endl;
+		Variable lv = var(l);
+		value[lv-1] = sign(l);
+		is_assigned[lv-1] = true;
+		trail.back().push_back(l);
+		propagation_queue.push_back(l);
 	}
 
 
