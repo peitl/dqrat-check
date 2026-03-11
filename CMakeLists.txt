@@ -8,6 +8,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+if (STATIC)
+	message(STATUS "static build")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++")
+endif ()
+
 if (CMAKE_BUILD_TYPE)
   message("Build type set to ${CMAKE_BUILD_TYPE}.")
 else()
