@@ -10,5 +10,6 @@ set(sources
 )
 
 add_executable(dqrat-check ${sources})
+install(TARGETS dqrat-check)
 
 #set_target_properties(dqrat-check PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
