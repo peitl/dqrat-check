@@ -1,6 +1,7 @@
 #include <string>
 #include "dqrat_check.hh"
 #include <time.h>
+#include <filesystem>
 
 using std::string;
 
@@ -13,10 +14,21 @@ int main(int argc, char** argv) {
 			formula_filename = string(argv[i]);
 		} else if (proof_filename == "") {
 			proof_filename = string(argv[i]);
+		} else if (string(argv[i]) == "-h" || string(argv[i]) == "--help") {
+			std::cout << "USAGE: dqrat-check <formula> <proof>" << std::endl;
+			std::cout << std::endl;
+			std::cout << "formula is expected in DQDIMACS format" << std::endl;
+			std::cout << "proof is expected in DQ,DIMACS format" << std::endl;
+		} else {
+			std::cout << "c too many arguments (expected 2, try --help)" << std::endl;
+			return 1;
 		}
 	}
 	if (formula_filename == "") {
 		std::cout << "c no formula given" << std::endl;
+		return 1;
+	} else if (std::filesystem::is_directory(formula_filename)) {
+		std::cout << "c formula '" << formula_filename << "' appears to be a directory" << std::endl;
 		return 1;
 	}
 	//std::cout << proof_filename << std::endl;
@@ -28,6 +40,9 @@ int main(int argc, char** argv) {
 		std::cout << "c formula '" << formula_filename << "' read successfully" << std::endl;
 		if (proof_filename == "") {
 			std::cout << "no proof given" << std::endl;
+			return 1;
+		} else if (std::filesystem::is_directory(proof_filename)) {
+			std::cout << "c proof '" << proof_filename << "' appears to be a directory" << std::endl;
 			return 1;
 		}
 		checker.readDQRAT(proof_filename);
