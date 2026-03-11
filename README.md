@@ -1,6 +1,6 @@
 # DQRAT-check
 
-DQRAT-check is a checker for proofs in the DQRAT+\(D^{\forallpure}\) format, which builds on the DQRAT format and extends it with a powerful new dependency scheme.
+DQRAT-check is a checker for proofs in the DQRAT+$D^{\forall pure}$ format, which builds on the DQRAT format and extends it with a powerful new dependency scheme.
 A paper for DQRAT-check is currently under submission to SAT 2026.
 
 ## Install
