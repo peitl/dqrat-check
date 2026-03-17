@@ -49,6 +49,45 @@ namespace DQRATCheck {
 	  return true;
 	}
 
+		bool DQRATCheck::check_pathC(Literal l, const vector<Literal>& lits, size_t num_lits, CRef target) {
+		uint32_t num_vars = dqbf.get_max_var();
+		uint32_t num_lits = num_vars * 2 + 2;  // was: num_vars * 2
+
+		Variable lvar = var(l);
+		bool lqtype = !dqbf.is_var_exists(lvar);
+		bool target_qtype = 1 - lqtype;
+
+		vector<bool> reachable(num_lits);
+		vector<bool> explored(num_lits);
+		std::stack<Literal> landing_literals;
+		if (lqtype == 1) { // l is universal
+			reachable.assign(num_lits, false);
+			explored.assign(num_lits, false);
+
+			for (size_t i = 0; i < num_lits; i++) {
+				Literal e = lits[i];
+				Variable evar = var(e);
+				if (dqbf.is_var_exists(evar)) {
+					if (k != l && dqbf.contains(lvar, dqbf.depset[evar])) {
+						landing_literals.push(~e);
+					}
+				}
+			}
+		}
+		else {
+			reachable.assign(num_lits, true);
+		}
+
+		Literal negl = ~l;
+
+		//uint32_t max_target_lits = 2*solver.variable_data_store->countVarsOfTypeRightOf(target_qtype, lvar);
+		uint32_t max_target_lits = 2 * dqbf.exivars.size();
+		uint32_t target_lits_found = 0;
+
+
+		return true
+	}
+
 	void DQRATCheck::scanClause(std::istream& ifs, vector<Literal>& lits) {
 		int numeric_token;
 		ifs >> numeric_token;
@@ -337,15 +376,22 @@ namespace DQRATCheck {
 
 		bool is_rat = true;
 		for (CRef cref : dqbf.constraint_database.getOcc(~pivot)) {
+
 			Constraint& constraint = dqbf.constraint_database.getConstraint(cref);
+			// check if disconnected
+			// if !check_pathC(pivot, lits, cref){ //need to make check_pathC(u,original_clause, target_clause) can use Dpure of Drrs if easier/fatsre
+			// rest of check...
+		
+
 			std::function<bool(Literal)> isouter = [pivot, this] (Literal l) -> bool {
 				return l != ~pivot && dqbf.is_var_outer_of_univar(var(l), var(pivot));
 			};
 			if (!negate_and_propagate((Literal*) &constraint.data[0], constraint.size(), isouter)) {
-				is_rat = false;
+				is_rat = false; 
 				break;
 			}
 			dqbf.backtrack_before(2);
+			//}
 		}
 		/*if (is_rat) {
 			std::cout << "clause is RAT" << std::endl;

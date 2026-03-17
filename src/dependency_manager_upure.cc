@@ -49,6 +49,103 @@ namespace DQRATCheck {
 		//checker.solver_statistics.time_spent_computing_depscheme += clock()-t;
 	}
 
+	bool DependencyManagerUPure::check_pathC(Literal l, const vector<Literal>& lits, size_t num_lits_vec, CRef target) {
+		uint32_t num_vars = dqbf.get_max_var();
+		uint32_t num_lits = num_vars * 2 + 2;  // was: num_vars * 2
+
+		Variable lvar = var(l);
+		bool lqtype = !dqbf.is_var_exists(lvar);
+		bool target_qtype = 1 - lqtype;
+
+		vector<bool> reachable(num_lits);
+		vector<bool> explored(num_lits);
+		std::stack<Literal> landing_literals;
+		if (lqtype == 1) { // l is universal
+			reachable.assign(num_lits, false);
+			explored.assign(num_lits, false);
+
+			for (size_t i = 0; i < num_lits_vec; i++) {
+				Literal e = lits[i];
+				Variable evar = var(e);
+				if (dqbf.is_var_exists(evar)) {
+					if (dqbf.contains(lvar, dqbf.depset[evar])) {
+						landing_literals.push(~e);
+					}
+				}
+			}
+		}
+		else {
+			reachable.assign(num_lits, true);
+		}
+		Literal negl = ~l;
+
+		//uint32_t max_target_lits = 2*solver.variable_data_store->countVarsOfTypeRightOf(target_qtype, lvar);
+		uint32_t max_target_lits = 2 * dqbf.exivars.size();
+		uint32_t target_lits_found = 0;
+		while (!landing_literals.empty()) {
+			Literal current_lit = landing_literals.top();
+			landing_literals.pop();
+			int current_lit_idx = toInt(current_lit);
+			if (explored[current_lit_idx])
+				continue;
+			explored[current_lit_idx] = true;
+
+			for (auto occit = dqbf.constraint_database.getOcc(current_lit).begin();
+				occit != dqbf.constraint_database.getOcc(current_lit).end();
+				occit++) {
+				//auto fel_ref = first_entry_literal.find(*occit);
+				if (*occit == target) {
+					return true;
+				}
+				Constraint& clause = dqbf.constraint_database.getConstraint(*occit);
+				bool clause_has_posl = false; //we actually flip things here the pure path is in negative u to the negative existential
+				for (Literal lit : clause) {
+					if (lit == l) {
+						// the path is not u-pure
+						clause_has_posl = true;
+						break;
+					}
+				}
+				if (clause_has_posl)
+					continue;
+				//first_entry_literal[*occit] = current_lit;
+				for (Literal lit : clause) {
+					// only explore if lit != current_lit
+					// entry and exit literals must be different
+					if (lit == current_lit)
+						continue;
+					if (!explored[toInt(~lit)]) {
+						Variable litvar = var(lit);
+						int lit_idx = toInt(lit);
+						bool litvarqtype = !dqbf.is_var_exists(litvar);
+						if (litvarqtype == 0 && dqbf.contains(lvar, dqbf.depset[litvar])) {
+							landing_literals.push(~lit);
+						}
+						if (litvarqtype == target_qtype && dqbf.contains(lvar, dqbf.depset[litvar])) {
+							/* lit is validly reached by the current path */
+							//std::cout << "can reach (" << dqbf.externalize(l) << ")-->(" << dqbf.externalize(lit) << ")" << std::endl;
+							if (!reachable[lit_idx]) {
+								reachable[lit_idx] = true;
+								target_lits_found++;
+							}
+						}
+					}
+				}
+				/*
+				if (target_lits_found == max_target_lits) {
+					landing_literals = {};
+					break;
+				}
+				*/
+			}
+		}
+
+		//return reachable;
+
+
+		return false;
+	}
+
 	vector<bool> DependencyManagerUPure::getReachable(Literal l) {
 		/* TODO optimizations?
 		 *
