@@ -17,6 +17,7 @@ namespace DQRATCheck {
 		virtual void addVariable(bool is_existential) = 0;
 		virtual void notifyStart() = 0;
 		virtual void getDeps(Variable v) = 0;
+		virtual bool check_pathC(Literal l, const vector<Literal>& lits, size_t num_lits_vec, CRef target)=0;
 
 		// will calculate resolution paths if necessary
 		inline bool notDependsOn(Variable of, Variable on) {

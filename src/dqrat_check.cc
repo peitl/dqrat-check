@@ -342,17 +342,17 @@ namespace DQRATCheck {
 			// check if disconnected
 			// if !check_pathC(pivot, lits, cref){ //need to make check_pathC(u,original_clause, target_clause) can use Dpure of Drrs if easier/fatsre
 			// rest of check...
-		
+			if (dqbf.constraint_database.check_pathC(pivot, lits, lits.size(), cref)){
 
-			std::function<bool(Literal)> isouter = [pivot, this] (Literal l) -> bool {
-				return l != ~pivot && dqbf.is_var_outer_of_univar(var(l), var(pivot));
-			};
-			if (!negate_and_propagate((Literal*) &constraint.data[0], constraint.size(), isouter)) {
-				is_rat = false; 
-				break;
+				std::function<bool(Literal)> isouter = [pivot, this] (Literal l) -> bool {
+					return l != ~pivot && dqbf.is_var_outer_of_univar(var(l), var(pivot));
+				};
+				if (!negate_and_propagate((Literal*) &constraint.data[0], constraint.size(), isouter)) {
+					is_rat = false; 
+					break;
+				}
+				dqbf.backtrack_before(2);
 			}
-			dqbf.backtrack_before(2);
-			//}
 		}
 		/*if (is_rat) {
 			std::cout << "clause is RAT" << std::endl;

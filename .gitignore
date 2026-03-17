@@ -32,3 +32,5 @@ out/build/x64-Debug/src/CMakeFiles/dqrat-check.dir/vc140.pdb
 out/build/x64-Debug/src/dqrat-check.ilk
 out/build/x64-Debug/src/dqrat-check.pdb
 .vs/dqrat-check/v17/ipch/AutoPCH/18985a5fa663203e/DEPENDENCY_MANAGER_UPURE.ipch
+.vs/dqrat-check/v17/ipch/AutoPCH/8260f0c84394b23e/DQBF.ipch
+.vs/dqrat-check/v17/ipch/AutoPCH/c56c551af1c4b972/DQRAT_CHECK.ipch

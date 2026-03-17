@@ -62,6 +62,9 @@ namespace DQRATCheck {
 			void universally_reduce(vector<Literal>& literals, bool clear_independencies = false);
 			void deleteClause(CRef cref);
 			
+			inline bool check_pathC(Literal l, const vector<Literal>& lits, size_t num_lits_vec, CRef target) {
+				return dependency_manager->check_pathC(l, lits, num_lits_vec, target);
+			}
 
 		protected:
 			void relocConstraintReferences();
