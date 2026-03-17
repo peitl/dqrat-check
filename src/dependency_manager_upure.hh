@@ -20,6 +20,7 @@ namespace DQRATCheck {
 		protected:
 			DQBF& dqbf;
 			vector<bool> getReachable(Literal l);
+			bool check_pathC(Literal l, const vector<Literal>& lits, size_t num_lits_vec, CRef target);
 			//bool checkDependency(Variable of, Literal lof);
 			bool independenciesKnown(Variable of) const;
 			bool numIndependencies(Variable of) const;

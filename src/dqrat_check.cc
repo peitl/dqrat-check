@@ -49,45 +49,6 @@ namespace DQRATCheck {
 	  return true;
 	}
 
-		bool DQRATCheck::check_pathC(Literal l, const vector<Literal>& lits, size_t num_lits, CRef target) {
-		uint32_t num_vars = dqbf.get_max_var();
-		uint32_t num_lits = num_vars * 2 + 2;  // was: num_vars * 2
-
-		Variable lvar = var(l);
-		bool lqtype = !dqbf.is_var_exists(lvar);
-		bool target_qtype = 1 - lqtype;
-
-		vector<bool> reachable(num_lits);
-		vector<bool> explored(num_lits);
-		std::stack<Literal> landing_literals;
-		if (lqtype == 1) { // l is universal
-			reachable.assign(num_lits, false);
-			explored.assign(num_lits, false);
-
-			for (size_t i = 0; i < num_lits; i++) {
-				Literal e = lits[i];
-				Variable evar = var(e);
-				if (dqbf.is_var_exists(evar)) {
-					if (k != l && dqbf.contains(lvar, dqbf.depset[evar])) {
-						landing_literals.push(~e);
-					}
-				}
-			}
-		}
-		else {
-			reachable.assign(num_lits, true);
-		}
-
-		Literal negl = ~l;
-
-		//uint32_t max_target_lits = 2*solver.variable_data_store->countVarsOfTypeRightOf(target_qtype, lvar);
-		uint32_t max_target_lits = 2 * dqbf.exivars.size();
-		uint32_t target_lits_found = 0;
-
-
-		return true
-	}
-
 	void DQRATCheck::scanClause(std::istream& ifs, vector<Literal>& lits) {
 		int numeric_token;
 		ifs >> numeric_token;
