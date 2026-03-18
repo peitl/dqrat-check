@@ -174,6 +174,10 @@ namespace DQRATCheck {
 			  bool pivot_reducible = true;
 			  for (Literal lit : lits) {
 				  Variable v = var(lit);
+				  if (lit == ~pivot) {
+					  pivot_reducible = false;
+					  break;
+				  }
 				  if (!dqbf.is_var_exists(v)) {
 					  continue;
 				  }
@@ -335,6 +339,7 @@ namespace DQRATCheck {
 			return true;
 		}
 
+		CRef cref_of_lits = dqbf.constraint_database.retrieveSortedConstraint(lits);
 		bool is_rat = true;
 		for (CRef cref : dqbf.constraint_database.getOcc(~pivot)) {
 
@@ -342,7 +347,7 @@ namespace DQRATCheck {
 			// check if disconnected
 			// if !check_pathC(pivot, lits, cref){ //need to make check_pathC(u,original_clause, target_clause) can use Dpure of Drrs if easier/fatsre
 			// rest of check...
-			if (dqbf.constraint_database.check_pathC(pivot, lits, lits.size(), cref)){
+			if (dqbf.constraint_database.check_pathC(pivot, lits, lits.size(), cref)|| cref==cref_of_lits ){
 
 				std::function<bool(Literal)> isouter = [pivot, this] (Literal l) -> bool {
 					return l != ~pivot && dqbf.is_var_outer_of_univar(var(l), var(pivot));
